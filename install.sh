@@ -8,7 +8,9 @@
 set -e
 
 # Install ZIM.
-install_zim() {
+setup_zim() {
+  command -v zmanage >/dev/null && return # If ZIM is install zmanage is accessible
+
   echo ' Installing ZIM'
 
   git clone --recursive https://github.com/zimfw/zimfw.git ${ZDOTDIR:-${HOME}}/.zim
@@ -24,13 +26,7 @@ install_zim() {
 # Check your current shell. If your active shell is ZSH install ZIM.
 case $SHELL in
 */zsh)
-  zmanage_info="$(zmanage info 2>/dev/null)" # If ZIM is install zmanage is accessible
-
-  if [[ -n "$zmanage_info" ]]; then
-    echo ' No need to install ZIM'
-  else
-    install_zim
-  fi
+  setup_zim
   ;;
 *)
   echo ' Activate ZSH!'
@@ -38,8 +34,7 @@ case $SHELL in
 esac
 
 go_version="$(go version 2>/dev/null)"
-
-build_go() {
+setup_go() {
   # If Go already exists just return
   [ -d ~/go ] && return
 
@@ -50,7 +45,7 @@ build_go() {
   ./all.bash
 }
 
-install_powerlevel9k() {
+setup_powerlevel9k() {
   # If powerlevel9k already exists just return.
   [ -d ~/.zim/modules/prompt/external-themes/powerlevel9k ] && return
 
@@ -61,11 +56,19 @@ install_powerlevel9k() {
     ~/.zim/modules/prompt/functions/prompt_powerlevel9k_setup
 }
 
-build_go
+NVM_VERSION="v0.33.11"
+setup_nvm() {
+  command -v nvm >/dev/null && return
+
+  curl -o- https://raw.githubusercontent.com/creationix/nvm/"$NVM_VERSION"/install.sh | bash
+}
+
+setup_go
 echo ' Go installed: '
 echo "  -> $go_version"
 
-install_powerlevel9k
+setup_powerlevel9k
+setup_nvm
 
 # Standard dotbot pre-configuration:
 CONFIG="install.conf.yaml"
