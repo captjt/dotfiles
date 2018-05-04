@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # This script assumes you already have git configured.
 #
-# Process is to install ZIM (ZSH Framework) if needed. Then install Go and
+# Process is to install ZIM (ZSH Framework) if needed. Then install Go, nvm and
 #  Powerlevel9k (ZSH Theme). Then bootstrap dotbot with the requirements
 #  necessary for the local OS.
 
 set -e
 
-# Install ZIM.
 setup_zim() {
-  command -v zmanage >/dev/null && return # If ZIM is install zmanage is accessible
+  [ -d ~/.zim ] && return
 
   echo ' Installing ZIM'
 
   git clone --recursive https://github.com/zimfw/zimfw.git ${ZDOTDIR:-${HOME}}/.zim
+
+  echo '
+  After this completes copy and paste this into your Zsh terminal to finish the
+    ZIM setup.
+
 
   setopt EXTENDED_GLOB
   for template_file in ${ZDOTDIR:-${HOME}}/.zim/templates/*; do
@@ -21,6 +25,7 @@ setup_zim() {
     touch ${user_file}
     ( print -rn "$(<${template_file})$(<${user_file})" >! ${user_file} ) 2>/dev/null
   done
+'
 }
 
 # Check your current shell. If your active shell is ZSH install ZIM.

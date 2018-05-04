@@ -21,5 +21,4 @@
     # TODO: Sublime Text
 
 - brewfile:
-    file: Brewfile
-    no-upgrage: true
+    - Brewfile
