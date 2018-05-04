@@ -101,7 +101,7 @@ git submodule update --init --recursive "${DOTBOT_DIR}"
 
 if [[ $OS == "darwin" ]]; then
   "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" \
-    --plugin-dir dotbot-brewfile \
+    --plugin-dir dotbot-brew \
     -c "${CONFIG}" "${@}"
 elif [[ $OS == "linux" ]]; then
   "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" \
