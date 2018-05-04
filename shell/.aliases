@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# `aliases` is used to provide custom variables.
+
+# === Aliases ===
+
+# Show local ip:
+alias localip="ipconfig getifaddr en0"
+
+# Bell when the program is finished. It is useful for some
+# time-consuming operations. Like:
+# > npm install | a
+alias a="terminal-notifier -sound default"
+
+# Lock the screen (when going AFK)
+alias afk="/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+
+# Copy public key to clipboard:
+alias pubkey="cat ~/.ssh/id_rsa.pub | pbcopy | echo '-> Public key copied to pasteboard.'"
+
+# === Homebrew ===
+alias brews='brew list -1'
+alias bubo='brew update && brew outdated'
+alias bubc='brew upgrade && brew cleanup'
+alias bubu='bubo && bubc'
+
+# === Docker ===
+
+# Remove all containers
+alias drm='docker rm $(docker ps -a -q)'
+
+# Remove all images
+alias drmi='docker rmi --force $(docker images -q)'
+
+# Stop all containers
+alias dstop='docker stop $(docker ps -a -q)'
+
+# Stop and remove all containers
+alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+
+# Get latest container ID
+alias dl='docker ps -l -q'
+
+# Get process included stop container
+alias dpa='docker ps -a'
+
+# Get images
+alias di='docker images'
+
+alias dip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+
+# Run container in background, e.g., $dkd base /bin/echo hello
+alias dkd='docker run -d -P'
+
+# Run interactive container, e.g., $dki base /bin/bash
+alias dki='docker run -i -t -P'
+
+# Execute interactive container, e.g., $dex base /bin/bash
+alias dex='docker exec -i -t'
+
+# Remove and prune all docker volumes
+alias dpv='docker volumes prune'

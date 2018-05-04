@@ -1,0 +1,54 @@
+[user]
+  name = captjt
+
+[alias]
+  br = branch
+  ci = commit
+  co = checkout
+  cob = checkout -b
+  dc = diff --cached
+  df = diff
+  ec = config --global -e
+  lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  prune-all = !git remote | xargs -n 1 git remote prune
+  st = status
+  who = shortlog -s --
+
+[core]
+  excludesfile = ~/.gitignore_global
+  editor = subl -n -w
+  pager = diff-so-fancy | less --tabs=4 -RFX
+
+[commit]
+  template = ~/.stCommitMsg
+  gpgsign = true
+
+[credential]
+  helper = osxkeychain
+
+[url "ssh://git@github.com/"]
+  insteadOf = https://github.com/
+
+[color]
+  ui = true
+
+[color "diff-highlight"]
+  oldNormal = red bold
+  oldHighlight = red bold 52
+  newNormal = green bold
+  newHighlight = green bold 22
+
+[color "diff"]
+  meta = yellow
+  frag = magenta bold
+  commit = yellow bold
+  old = red bold
+  new = green bold
+  whitespace = red reverse
+
+[diff-so-fancy]
+  stripLeadingSymbols = false
+
+# Allow local customizations in the .gitconfig_local file
+[include]
+  path = ~/.gitconfig_local

@@ -1,0 +1,25 @@
+- clean: ['~']
+
+- shell:
+  - [git submodule update --init --recursive, Installing submodules]
+
+- link:
+    # Terminal:
+    ~/.shell:
+      path: shell
+      create: true
+    ~/.zshrc: config/zshrc
+
+    # Git:
+    ~/.gitconfig: config/gitconfig
+    # TODO: Add global gitignore
+    # ~/.gitignore_global: config/gitignore
+
+    # Editors:
+    ~/.editorconfig: config/editorconfig
+
+    # TODO: Sublime Text
+
+- brewfile:
+    file: Brewfile
+    no-upgrage: true

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# `external` handles all external tool configurations.
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+# Uncomment for nvm bash completion.
+# [[ -r $NVM_DIR/bash_completion ]] && \. "$NVM_DIR/bash_completion"
+
+# If Kubernetes helm tool is installed activate the helm ZSH completion.
+#
+#  See: https://docs.helm.sh/helm/#helm-completion
+if [ $commands[helm] ]; then
+  source <(helm completion zsh)
+fi
+
+# If the Kubernetes kubectl tool is installed activate the kubectl ZSH
+#  completion.
+#
+#  See: https://kubernetes.io/docs/tasks/tools/install-kubectl/#enabling-shell-autocompletion
+if [ $commands[kubectl] ]; then
+  source <(kubectl completion zsh)
+fi
+
+# If npm is installed this will provide basic npm ZSH completion.
+#
+#  See: https://docs.npmjs.com/cli/completion#synopsis
+if [ $commands[npm] ]; then
+  source <(npm completion)
+fi

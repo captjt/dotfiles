@@ -1,0 +1,45 @@
+# .zshrc file with all of my ZSH configurations and settings.
+
+# === ZIM Settings ===
+# This requires ZIM to be installed and configured already.
+# Project page: https://github.com/zimfw/zimfw
+# Change default ZIM location
+export ZIM_HOME=${ZDOTDIR:-${HOME}}/.zim
+# Start ZIM
+[[ -s ${ZIM_HOME}/init.zsh ]] && source ${ZIM_HOME}/init.zsh
+
+export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=~/.local/bin:$PATH
+
+# === Powerlevel9k theme settings ===
+# Project page: https://github.com/bhilburn/powerlevel9k
+POWERLEVEL9K_INSTALLATION_PATH=~/.zim/modules/prompt/external-themes/powerlevel9k/powerlevel9k.zsh-theme
+POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir aws kubecontext)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(vcs command_execution_time time)
+POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
+POWERLEVEL9K_PROMPT_ON_NEWLINE=true
+POWERLEVEL9K_STATUS_VERBOSE=false
+POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
+
+# Load ZSH completions.
+fpath=(~/.zsh/completion $fpath)
+autoload -Uz compinit && compinit -i
+
+# === Misc. ===
+export UPDATE_ZSH_DAYS=13
+export HISTCONTROL=ignoreboth:erasedups
+export LANG=en_US.UTF-8
+
+# === Shell parts: envvars, aliases, external tools, local functions ===
+
+source "$HOME/.shell/.exports"
+source "$HOME/.shell/.aliases"
+source "$HOME/.shell/.functions"
+source "$HOME/.shell/.external"
+
+# === Local variables and overrides ===
+
+if [[ -f "$HOME/.shell_env_local" ]]; then
+  source "$HOME/.shell_env_local"
+fi
