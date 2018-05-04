@@ -3,6 +3,9 @@
 
 set -e
 
+# Shortcut to this dotfiles path is $DOTFILES
+DOTFILES="$HOME/.dotfiles"
+
 # Setup and configure antibody.
 # Project page: https://github.com/getantibody/antibody
 setup_antibody() {
@@ -13,7 +16,7 @@ setup_antibody() {
   else
     curl -sL https://git.io/antibody | sh -s
   fi
-  antibody bundle <"$DOTFILES/antibody/bundles.txt" >~/.zsh_plugins.sh
+  antibody bundle < "$DOTFILES/antibody/bundles.txt" > ~/.zsh_plugins.sh
   antibody update
 }
 
@@ -66,8 +69,8 @@ setup_fonts() {
 
   if [ "$(uname -s)" = "Darwin" ]; then
     if which brew >/dev/null 2>&1; then
-      brew cask font-firacode-nerd-font
-      brew cask font-firacode-nerd-font-mono
+      brew cask install font-firacode-nerd-font
+      brew cask install font-firacode-nerd-font-mono
     else
       install ~/Library/Fonts
     fi

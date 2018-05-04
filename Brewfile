@@ -1,6 +1,5 @@
 tap "ahmetb/kubectx", "https://github.com/ahmetb/kubectx.git"
 tap "homebrew/core"
-tap "homebrew/binary"
 tap "homebrew/bundle"
 tap "homebrew/services"
 tap "caskroom/cask"
