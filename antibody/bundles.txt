@@ -1,0 +1,12 @@
+# This block is in alphabetic order
+mafredri/zsh-async
+Tarrasch/zsh-bd
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-completions
+
+robbyrussell/oh-my-zsh folder:plugins/aws
+
+# These should be last.
+bhilburn/powerlevel9k
+zsh-users/zsh-syntax-highlighting
+zsh-users/zsh-history-substring-search

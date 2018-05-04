@@ -1,15 +1,4 @@
-#!/usr/bin/env bash
-# `exports` is used to provide custom environment variables.
-
-# === Preferred Editor ===
-if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR=$(which emacs)
-else
-  export EDITOR='vi'
-fi
-
-# === Go ===
-
+#!/bin/sh
 export GOPATH=$HOME/go
 export GOBIN=$HOME/go/bin
 export CDPATH=$GOPATH/src/github.com

@@ -4,16 +4,14 @@
   - [git submodule update --init --recursive, Installing submodules]
 
 - link:
-    # Terminal:
-    ~/.shell:
-      path: shell
-      create: true
     ~/.zshrc: config/zshrc
+
+    ~/.bin:
+      path: bin
+      create: true
 
     # Git:
     ~/.gitconfig: config/gitconfig
-    # TODO: Add global gitignore
-    # ~/.gitignore_global: config/gitignore
 
     # Editors:
     ~/.editorconfig: config/editorconfig
