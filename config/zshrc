@@ -13,6 +13,8 @@ else
   export EDITOR='vi'
 fi
 
+bindkey -e
+
 # === Powerlevel9k theme settings ===
 # Project page: https://github.com/bhilburn/powerlevel9k
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
