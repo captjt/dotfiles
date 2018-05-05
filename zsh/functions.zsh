@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# `functions` provides helper functions for shell.
+#!/bin/sh
 
 # This will install or update the go tools I use in my environments.
 gotools() {

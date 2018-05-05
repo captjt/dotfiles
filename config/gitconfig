@@ -1,5 +1,6 @@
 [user]
   name = captjt
+	email = jtaylor007.jt@gmail.com
 
 [alias]
   br = branch
@@ -21,7 +22,7 @@
 
 [commit]
   template = ~/.stCommitMsg
-  gpgsign = true
+  gpgsign = false
 
 [credential]
   helper = osxkeychain

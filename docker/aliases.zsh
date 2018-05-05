@@ -1,29 +1,4 @@
-#!/usr/bin/env bash
-# `aliases` is used to provide custom variables.
-
-# === Aliases ===
-
-# Show local ip:
-alias localip="ipconfig getifaddr en0"
-
-# Bell when the program is finished. It is useful for some
-# time-consuming operations. Like:
-# > npm install | a
-alias a="terminal-notifier -sound default"
-
-# Lock the screen (when going AFK)
-alias afk="/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend"
-
-# Copy public key to clipboard:
-alias pubkey="cat ~/.ssh/id_rsa.pub | pbcopy | echo '-> Public key copied to pasteboard.'"
-
-# === Homebrew ===
-alias brews='brew list -1'
-alias bubo='brew update && brew outdated'
-alias bubc='brew upgrade && brew cleanup'
-alias bubu='bubo && bubc'
-
-# === Docker ===
+#!/bin/sh
 
 # Remove all containers
 alias drm='docker rm $(docker ps -a -q)'
@@ -58,4 +33,4 @@ alias dki='docker run -i -t -P'
 alias dex='docker exec -i -t'
 
 # Remove and prune all docker volumes
-alias dpv='docker volumes prune'
+alias dvp='docker system prune --volumes -fa'

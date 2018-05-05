@@ -1,19 +1,20 @@
 # .zshrc file with all of my ZSH configurations and settings.
 
-# === ZIM Settings ===
-# This requires ZIM to be installed and configured already.
-# Project page: https://github.com/zimfw/zimfw
-# Change default ZIM location
-export ZIM_HOME=${ZDOTDIR:-${HOME}}/.zim
-# Start ZIM
-[[ -s ${ZIM_HOME}/init.zsh ]] && source ${ZIM_HOME}/init.zsh
-
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=~/.local/bin:$PATH
 
+# Shortcut to this dotfiles path is $DOTFILES
+export DOTFILES="$HOME/.dotfiles"
+
+# Default editor (Sublime Text).
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='subl'
+else
+  export EDITOR='vi'
+fi
+
 # === Powerlevel9k theme settings ===
 # Project page: https://github.com/bhilburn/powerlevel9k
-POWERLEVEL9K_INSTALLATION_PATH=~/.zim/modules/prompt/external-themes/powerlevel9k/powerlevel9k.zsh-theme
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir aws kubecontext)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(vcs command_execution_time time)
@@ -22,24 +23,43 @@ POWERLEVEL9K_PROMPT_ON_NEWLINE=true
 POWERLEVEL9K_STATUS_VERBOSE=false
 POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
 
-# Load ZSH completions.
-fpath=(~/.zsh/completion $fpath)
-autoload -Uz compinit && compinit -i
-
-# === Misc. ===
 export UPDATE_ZSH_DAYS=13
 export HISTCONTROL=ignoreboth:erasedups
 export LANG=en_US.UTF-8
 
-# === Shell parts: envvars, aliases, external tools, local functions ===
+# All of our zsh files
+typeset -U config_files
+config_files=($DOTFILES/*/*.zsh)
 
-source "$HOME/.shell/.exports"
-source "$HOME/.shell/.aliases"
-source "$HOME/.shell/.functions"
-source "$HOME/.shell/.external"
+# Load the path files
+for file in ${(M)config_files:#*/path.zsh}; do
+  source "$file"
+done
 
-# === Local variables and overrides ===
+# Load antibody plugins
+source ~/.zsh_plugins.sh
 
-if [[ -f "$HOME/.shell_env_local" ]]; then
-  source "$HOME/.shell_env_local"
+# Load everything but the path and completion files
+for file in ${${config_files:#*/path.zsh}:#*/completion.zsh}; do
+  source "$file"
+done
+
+autoload -Uz compinit
+typeset -i updated_at=$(date +'%j' -r ~/.zcompdump 2>/dev/null || stat -f '%Sm' -t '%j' ~/.zcompdump 2>/dev/null)
+if [ $(date +'%j') != $updated_at ]; then
+  compinit -i
+else
+  compinit -C -i
 fi
+
+# Load all completions after autocomplete loads
+for file in ${(M)config_files:#*/completion.zsh}; do
+  source "$file"
+done
+
+unset config_files updated_at
+
+# Use .localrc for SUPER SECRET STUFF that you don't want in your public,
+#  versioned repo.
+# shellcheck disable=SC1090
+[ -f ~/.localrc ] && . ~/.localrc
