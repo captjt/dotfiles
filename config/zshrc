@@ -8,9 +8,9 @@ export DOTFILES="$HOME/.dotfiles"
 
 # Default editor (Sublime Text).
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='subl'
-else
   export EDITOR='vi'
+else
+  export EDITOR='subl'
 fi
 
 bindkey -e
