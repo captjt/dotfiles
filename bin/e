@@ -13,4 +13,7 @@
 #   $ e .
 #   $ e /usr/local
 #   # => opens the specified directory in your editor
-exec "$EDITOR" "${1:-.}" >/tmp/editor-log 2>&1 &
+#
+# Underneath this will add an '--add' flag to add the directory to the existing
+# window. Sublime Text 3 goodness :)
+exec "$EDITOR" "${1:-.}" "--add" >/tmp/editor-log 2>&1 &

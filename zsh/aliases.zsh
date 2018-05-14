@@ -13,3 +13,10 @@ alias afk="/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resourc
 
 # Copy public key to clipboard:
 alias pubkey="cat ~/.ssh/id_rsa.pub | pbcopy | echo '-> Public key copied to pasteboard.'"
+
+alias l='ls -lFh'     #size,show type,human readable
+alias ll='ls -l'      #long list
+alias ldot='ls -ld .*'
+
+# mmake >> make: see github.com/tj/mmake
+alias make='mmake'

@@ -2,7 +2,7 @@
 
 # This will install or update the go tools I use in my environments.
 gotools() {
-  echo ' Installing Go tools'
+  echo ' Upstalling Go tools'
   echo ' -> go dep'
   go get -u github.com/golang/dep/cmd/dep
 
@@ -40,7 +40,10 @@ gotools() {
   go get -u github.com/rogpeppe/godef
 
   echo ' -> keyify'
-  go get honnef.co/go/tools/cmd/keyify
+  go get -u honnef.co/go/tools/cmd/keyify
+
+  echo ' -> megacheck'
+  go get -u honnef.co/go/tools/cmd/megacheck
 }
 
 # Create a new directory and enter it. If cd fails it will emit failure message.
