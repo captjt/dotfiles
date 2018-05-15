@@ -1,8 +1,5 @@
 - clean: ['~']
 
-- shell:
-  - [git submodule update --init --recursive, Installing submodules]
-
 - link:
     ~/.zshrc: config/zshrc
 
@@ -16,7 +13,4 @@
     # Editors:
     ~/.editorconfig: config/editorconfig
 
-    # TODO: Sublime Text
-
-- brewfile:
-    - Brewfile
+    # TODO: Sublime Text Configurations

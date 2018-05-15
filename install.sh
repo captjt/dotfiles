@@ -80,8 +80,26 @@ setup_fonts() {
   fi
 }
 
+apt_sublime() {
+  command -v subl >/dev/null && return
+
+  echo ' Installing Sublime Text 3'
+
+  wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+
+  sudo apt-get install apt-transport-https
+
+  # Sublime Text - Development version cause why not?
+  echo "deb https://download.sublimetext.com/ apt/dev/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+
+  sudo apt-get update
+  sudo apt-get install sublime-text
+}
+
 # Standard dotbot pre-configuration:
-CONFIG="install.conf.yaml"
+BASE_CONFIG_PREFIX="base"
+MAC_CONFIG_PREFIX="mac"
+CONFIG_SUFFIX=".conf.yaml"
 DOTBOT_DIR="dotbot"
 
 DOTBOT_BIN="bin/dotbot"
@@ -92,19 +110,24 @@ BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${BASEDIR}"
 git submodule update --init --recursive "${DOTBOT_DIR}"
 
-# Check the OS - install with dotbot-brew if on Darwin based machine.
+# Check the OS - install Brews with dotbot-brew if on Darwin based machine.
 if [ "$(uname -s)" = "Darwin" ]; then
   "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" \
-    --plugin-dir dotbot-brew \
-    -c "${CONFIG}" "${@}"
+      --plugin-dir dotbot-brew \
+      -c "${MAC_CONFIG_PREFIX}${CONFIG_SUFFIX}"
 elif [ "$(uname -s)" = "Linux" ]; then
-  "${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" \
-    -c "${CONFIG}" "${@}"
+
+  # If on a Linux machine install Sublime Text 3 if it isn't already installed.
+  apt_sublime
 else
   echo ' This should never hit here'
-  echo '  -> ¯\_(ツ)_/¯ '
+  echo '  ¯\_(ツ)_/¯ '
   exit 1
 fi
+
+# Run dotbot with the base configurations.
+"${BASEDIR}/${DOTBOT_DIR}/${DOTBOT_BIN}" -d "${BASEDIR}" \
+  -c "${BASE_CONFIG_PREFIX}${CONFIG_SUFFIX}"
 
 # Check your current shell. If your active shell is ZSH setup antibody.
 case $SHELL in
