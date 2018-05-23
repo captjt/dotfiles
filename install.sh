@@ -29,14 +29,11 @@ setup_nvm() {
 }
 
 setup_go() {
-  # If Go already exists just return
-  [ -d ~/go ] && return
+  command -v go >/dev/null && return
 
-  cd ~
-  git clone https://go.googlesource.com/go
-  cd go/src
-  echo ' Building Go'
-  ./all.bash
+  if [ "$(uname -s)" = "Linux" ]; then
+     snap install --classic go
+  fi
 }
 
 setup_docker() {
@@ -59,27 +56,17 @@ setup_docker() {
 }
 
 setup_fonts() {
-  URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v2.0.0/FiraCode.zip"
-
-  install() {
-    curl -L -s -o /tmp/fura.zip "$URL"
-    unzip /tmp/fura.zip -d /tmp
-    cp /tmp/FiraCode/*.ttf "$2"
-  }
-
   if [ "$(uname -s)" = "Darwin" ]; then
     if which brew >/dev/null 2>&1; then
       brew cask install font-firacode-nerd-font
       brew cask install font-firacode-nerd-font-mono
-    else
-      install ~/Library/Fonts
     fi
   else
-    mkdir -p ~/.fonts
-    install ~/.fonts
+    sudo apt install fonts-firacode
   fi
 }
 
+# This will only install sublime text 3 on a debian based machine.
 apt_sublime() {
   command -v subl >/dev/null && return
 
@@ -117,7 +104,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
       -c "${MAC_CONFIG_PREFIX}${CONFIG_SUFFIX}"
 elif [ "$(uname -s)" = "Linux" ]; then
 
-  # If on a Linux machine install Sublime Text 3 if it isn't already installed.
+  # If on a Debian based Linux machine install Sublime Text 3 if it isn't 
+  # already installed.
   apt_sublime
 else
   echo ' This should never hit here'

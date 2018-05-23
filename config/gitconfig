@@ -22,7 +22,7 @@
 
 [commit]
   template = ~/.stCommitMsg
-  gpgsign = false
+  gpgsign = true
 
 [credential]
   helper = osxkeychain
