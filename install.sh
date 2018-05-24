@@ -66,21 +66,12 @@ setup_fonts() {
   fi
 }
 
-# This will only install sublime text 3 on a debian based machine.
-apt_sublime() {
+# This will only install Sublime Text 3 on a Linux machine.
+snap_sublime() {
   command -v subl >/dev/null && return
 
-  echo ' Installing Sublime Text 3'
-
-  wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-
-  sudo apt-get install apt-transport-https
-
-  # Sublime Text - Development version cause why not?
-  echo "deb https://download.sublimetext.com/ apt/dev/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-
-  sudo apt-get update
-  sudo apt-get install sublime-text
+  # Install ST3 development branch -- because why not?!
+  snap install sublime-text --classic --channel-edge
 }
 
 # Standard dotbot pre-configuration:
@@ -103,10 +94,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
       --plugin-dir dotbot-brew \
       -c "${MAC_CONFIG_PREFIX}${CONFIG_SUFFIX}"
 elif [ "$(uname -s)" = "Linux" ]; then
-
-  # If on a Debian based Linux machine install Sublime Text 3 if it isn't 
-  # already installed.
-  apt_sublime
+  # Install ST3 on Linux machine if it's not already.
+  snap_sublime
 else
   echo ' This should never hit here'
   echo '  ¯\_(ツ)_/¯ '
