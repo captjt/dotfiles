@@ -29,3 +29,24 @@ tools() {
 mc () {
   mkdir -p "$@" && cd "$@" || echo 'Failed to make directory.'
 }
+
+# Get ExternalIPs of all Kubernetes worker nodes.
+knip() {
+  echo "Kubernetes worker nodes ExternalIPs:"
+  echo ""
+  kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="ExternalIP")].address}' | xargs -n1
+}
+
+# Get ExternalIPs of all Kubernetes master nodes.
+kmip() {
+  echo "Kubernetes master nodes ExternalIPs:"
+  echo ""
+  kubectl get nodes --selector=kubernetes.io/role==master -o jsonpath='{.items[*].status.addresses[?(@.type=="ExternalIP")].address}' | xargs -n1
+}
+
+# List all Secrets currently in use by any Kubernetes pod.
+kusc() {
+  echo "Kubernetes secrets that are used:"
+  echo ""
+  kubectl get pods -o json | jq '.items[].spec.containers[].env[]?.valueFrom.secretKeyRef.name' | grep -v null | sort | uniq
+}

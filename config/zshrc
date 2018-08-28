@@ -6,11 +6,11 @@ export PATH=~/.local/bin:$PATH
 # Shortcut to this dotfiles path is $DOTFILES
 export DOTFILES="$HOME/.dotfiles"
 
-# Default editor (Sublime Text).
+# Default editor (VS Code).
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='vi'
+  export EDITOR='code'
 else
-  export EDITOR='subl'
+  export EDITOR='code'
 fi
 
 bindkey -e
@@ -18,8 +18,8 @@ bindkey -e
 # === Powerlevel9k theme settings ===
 # Project page: https://github.com/bhilburn/powerlevel9k
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir aws kubecontext)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(vcs command_execution_time time)
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(aws virtualenv nvm command_execution_time time)
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
 POWERLEVEL9K_PROMPT_ON_NEWLINE=true
 POWERLEVEL9K_STATUS_VERBOSE=false

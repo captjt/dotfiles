@@ -8,5 +8,6 @@ robbyrussell/oh-my-zsh folder:plugins/aws
 
 # These should be last.
 bhilburn/powerlevel9k
+# denysdovhan/spaceship-prompt
 zsh-users/zsh-syntax-highlighting
 zsh-users/zsh-history-substring-search

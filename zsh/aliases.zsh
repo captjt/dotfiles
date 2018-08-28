@@ -20,3 +20,6 @@ alias ldot='ls -ld .*'
 
 # mmake >> make: see github.com/tj/mmake
 alias make='mmake'
+
+# nvim >> vim: see neovim.io
+alias vim='nvim'

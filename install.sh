@@ -30,13 +30,13 @@ setup_nvm() {
 
 setup_go() {
   # If Go already exists just return
-  [ -d ~/go ] && return
+  command -v go >/dev/null && return
 
-  cd ~
-  git clone https://go.googlesource.com/go
-  cd go/src
-  echo ' Building Go'
-  ./all.bash
+  if [ "$(uname -s)" = "Darwin" ]; then
+    brew install go
+  else
+    sudo snap install go --classic
+  fi
 }
 
 setup_docker() {
@@ -61,7 +61,7 @@ setup_docker() {
 setup_fonts() {
   URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v2.0.0/FiraCode.zip"
 
-  install() {
+  install_fonts() {
     curl -L -s -o /tmp/fura.zip "$URL"
     unzip /tmp/fura.zip -d /tmp
     cp /tmp/FiraCode/*.ttf "$2"
@@ -72,28 +72,22 @@ setup_fonts() {
       brew cask install font-firacode-nerd-font
       brew cask install font-firacode-nerd-font-mono
     else
-      install ~/Library/Fonts
+      install_fonts ~/Library/Fonts
     fi
   else
     mkdir -p ~/.fonts
-    install ~/.fonts
+    install_fonts ~/.fonts
   fi
 }
 
-apt_sublime() {
-  command -v subl >/dev/null && return
+setup_vscode() {
+  command -v code >/dev/null && return
 
-  echo ' Installing Sublime Text 3'
-
-  wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-
-  sudo apt-get install apt-transport-https
-
-  # Sublime Text - Development version cause why not?
-  echo "deb https://download.sublimetext.com/ apt/dev/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-
-  sudo apt-get update
-  sudo apt-get install sublime-text
+  if [ "$(uname -s)" = "Darwin" ]; then
+    brew cask install visual-studio-code
+  else
+    sudo snap install vscode --classic
+  fi
 }
 
 # Standard dotbot pre-configuration:
@@ -116,9 +110,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
       --plugin-dir dotbot-brew \
       -c "${MAC_CONFIG_PREFIX}${CONFIG_SUFFIX}"
 elif [ "$(uname -s)" = "Linux" ]; then
-
-  # If on a Linux machine install Sublime Text 3 if it isn't already installed.
-  apt_sublime
+  # If on a Linux machine install VS Code if it isn't already installed.
+  setup_vscode
 else
   echo ' This should never hit here'
   echo '  ¯\_(ツ)_/¯ '

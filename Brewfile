@@ -53,3 +53,4 @@ brew "boz/repo/kail"
 brew "dtan4/dtan4/k8sec"
 
 cask "gitify"
+cask "etcher"
