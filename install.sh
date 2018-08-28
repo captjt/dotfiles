@@ -29,13 +29,10 @@ setup_nvm() {
 }
 
 setup_go() {
-  # If Go already exists just return
   command -v go >/dev/null && return
 
-  if [ "$(uname -s)" = "Darwin" ]; then
-    brew install go
-  else
-    sudo snap install go --classic
+  if [ "$(uname -s)" = "Linux" ]; then
+    sudo snap install --classic go
   fi
 }
 

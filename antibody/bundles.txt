@@ -6,6 +6,9 @@ zsh-users/zsh-completions
 
 robbyrussell/oh-my-zsh folder:plugins/aws
 
+# Blackbox for git file encryption
+StackExchange/blackbox
+
 # These should be last.
 bhilburn/powerlevel9k
 # denysdovhan/spaceship-prompt
