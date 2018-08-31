@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -e
+
+export DESIRED_VERSION="v2.9.1"
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The helm version to install (default v2.9.1)
+"
+}
+
+install() {
+  curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+  chmod 700 get_helm.sh
+
+  echo "Running get_helm.sh"
+  ./get_helm.sh
+
+  echo "Cleaning up get_helm.sh"
+  rm ./get_helm.sh
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      if [ -z "$2" ]; then
+        echo "helm version cannot be empty"
+        exit 1
+      fi
+      export DESIRED_VERSION="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

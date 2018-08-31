@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -e
+
+KUBECTL_VERION="v1.8.9"
+OS=""
+ARCH=""
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The kubectl version to install (default v1.8.9)
+"
+}
+
+unamem="$(uname -m)"
+if [[ $unamem == *64* ]]; then
+  ARCH="amd64"
+else
+  echo "unsupported or unknown architecture: $unamem"
+  exit 1
+fi
+
+# Check for os settings
+uname="$(uname)"
+unameu=$(tr '[:lower:]' '[:upper:]' <<<"$uname")
+if [[ ${unameu} == *DARWIN* ]]; then
+  OS="darwin"
+elif [[ ${unameu} == *LINUX* ]]; then
+  OS="linux"
+else
+  echo "unsupported or unknown os: $uname"
+  exit 1
+fi
+
+install() {
+  curl -LO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERION/bin/$OS/$ARCH/kubectl
+  chmod +x ./kubectl
+  sudo mv ./kubectl /usr/local/bin/kubectl
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      KUBECTL_VERION="$2"
+      if [ -z "$KUBECTL_VERION" ]; then
+        echo "kubectl version cannot be empty"
+        exit 1
+      fi
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

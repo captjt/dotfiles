@@ -7,3 +7,6 @@ for topic_folder in $DOTFILES/*; do
     fpath=($topic_folder $fpath)
   fi
 done
+
+# Add .local zsh completions if you have any defined.
+fpath=(~/.local/zsh_completions $fpath)
