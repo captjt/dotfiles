@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -e
+
+export DESIRED_VERSION="1.11"
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The go version to install (default 1.11)
+"
+}
+
+install() {
+
+  local goroot="/usr/local/go"
+
+  if [ -d "$goroot" ]; then
+    echo "Removing old install of Go."
+    sudo rm -rfv "$goroot"
+  fi
+
+  echo "Desired Go version: $DESIRED_VERSION."
+  curl -o "$HOME/go.pkg" "https://dl.google.com/go/go$DESIRED_VERSION.darwin-amd64.pkg"
+
+  echo "Installer location: $HOME/go.pkg."
+  sudo open "$HOME/go.pkg"
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      if [ -z "$2" ]; then
+        echo "Go version cannot be empty"
+        exit 1
+      fi
+      export DESIRED_VERSION="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

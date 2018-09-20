@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -e
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                  Help
+    -u, --username {username}   The username to create role binding for
+    -n, --namespace {namespace} The namespace to create the role binding in
+    -r, --role {role}           The specific role to create the binding with
+"
+}
+
+NAMESPACE="default"
+ROLE="cluster-admin"
+USERNAME=""
+
+create_cluster_role_binding() {
+
+  # bindingname is the new user's role binding name.
+  local bindingname="$USERNAME-role"
+
+  echo "Creating serviceaccount: $USERNAME.."
+  kubectl create serviceaccount $USERNAME
+
+  local secret=$(kubectl get serviceaccount $USERNAME -o json | jq -r '.secrets[].name')
+  echo "Service account secrets: $secret"
+
+  echo "Deleting rolebinding if already it exists.."
+  kubectl delete clusterrolebinding $bindingname
+
+  echo "Creating clusterrolebinding for $USERNAME with role $ROLE.."
+  kubectl create clusterrolebinding $bindingname \
+      --clusterrole $ROLE \
+      --serviceaccount "$NAMESPACE:$USER"
+
+  local context=$(kubectl config current-context)
+  echo "Getting service account's CA certificate.."
+  kubectl get secret $secret -o json | jq -r '.data["ca.crt"]' | base64 -D > "$USERNAME-$context-ca.crt"
+  echo "Service account's CA certificate found @ $USERNAME-$context-ca.crt"
+
+  echo "Certificate..."
+  cat "$USERNAME-$context-ca.crt"
+  echo ""
+
+  local user_token=$(kubectl get secret $secret -o json | jq -r '.data["token"]' | base64 -D)
+  echo "Service account user token: $user_token"
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -r | --role)
+      if [ -z "$2" ]; then
+        echo "Cluster role not specified"
+        exit 1
+      fi
+      ROLE="$2"
+      shift 2
+      ;;
+    -n | --namespace)
+      if [ -z "$2" ]; then
+        echo "Namespace not specified"
+        exit 1
+      fi
+      NAMESPACE="$2"
+      shift 2
+      ;;
+    -u | --username)
+      if [ -z "$2" ]; then
+        echo "Username not specified"
+        exit 1
+      fi
+      USERNAME="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$USERNAME" ]] ;then
+  echo "Username is not properly set"
+  usage
+  exit 1
+fi
+
+create_cluster_role_binding

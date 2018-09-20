@@ -5,7 +5,9 @@
 [alias]
   br = branch
   ca = commit --amend -C HEAD
+  cas = commit -a -S
   ci = commit
+  cs = commit -S
   co = checkout
   cob = checkout -b
   dc = diff --cached
@@ -18,7 +20,7 @@
 
 [core]
   excludesfile = ~/.gitignore_global
-  editor = code -n -w
+  editor = subl
   pager = diff-so-fancy | less --tabs=4 -RFX
 
 [commit]

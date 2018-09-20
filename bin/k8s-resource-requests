@@ -14,7 +14,7 @@ usage() {
   local percent_cpu
   local percent_mem
 
-  echo "Node resource usage results:"
+  echo "Node resource requests results:"
   echo ""
   for n in $nodes; do
     requests=$($KUBECTL describe node "$n" | grep -A2 -E "^\\s*CPU Requests" | tail -n1)
@@ -30,7 +30,7 @@ usage() {
   local readonly avg_percent_cpu=$((total_percent_cpu / node_count))
   local readonly avg_percent_mem=$((total_percent_mem / node_count))
 
-  echo "Average usage: ${avg_percent_cpu}% CPU, ${avg_percent_mem}% memory."
+  echo "Average requests: ${avg_percent_cpu}% CPU, ${avg_percent_mem}% memory."
 }
 
 usage "$NODES"

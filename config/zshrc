@@ -6,11 +6,11 @@ export PATH=~/.local/bin:$PATH
 # Shortcut to this dotfiles path is $DOTFILES
 export DOTFILES="$HOME/.dotfiles"
 
-# Default editor (VS Code).
+# Default editor (Sublime Text 3).
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='code'
+  export EDITOR='subl'
 else
-  export EDITOR='code'
+  export EDITOR='subl'
 fi
 
 bindkey -e
