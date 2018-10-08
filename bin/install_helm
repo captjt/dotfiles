@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
-export DESIRED_VERSION="v2.9.1"
+export DESIRED_VERSION="v2.11.0"
 
 usage() {
   echo -e "\
 Usage: $0 [options]
     -h, --help                Help
-    -v, --version {X.X.X}     The helm version to install (default v2.9.1)
+    -v, --version {X.X.X}     The helm version to install (default v2.11.0)
 "
 }
 

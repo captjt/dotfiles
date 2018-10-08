@@ -1,13 +1,13 @@
 [user]
   name = captjt
-	email = jtaylor007.jt@gmail.com
+  email = jtaylor007.jt@gmail.com
 
 [alias]
   br = branch
   ca = commit --amend -C HEAD
   cas = commit -a -S
   ci = commit
-  cs = commit -S
+  cs = commit -S -m
   co = checkout
   cob = checkout -b
   dc = diff --cached
@@ -57,6 +57,6 @@
 [include]
   path = ~/.gitconfig_local
 [gpg]
-	program = gpg
+  program = gpg
 [diff "sopsdiffer"]
-	textconv = sops -d
+  textconv = sops -d
