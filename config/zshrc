@@ -6,7 +6,7 @@ export PATH=~/.local/bin:$PATH
 # Shortcut to this dotfiles path is $DOTFILES
 export DOTFILES="$HOME/.dotfiles"
 
-# Default editor (Sublime Text 3).
+# Default editor.
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='subl'
 else
@@ -15,11 +15,26 @@ fi
 
 bindkey -e
 
+# zsh_gcloud_account() {
+#   local region zone color
+#
+#   color='%F{green}'
+#
+#   region="$(gcloud config get-value compute/region 2>/dev/null)"
+#   zone="$(gcloud config get-value compute/zone 2>/dev/null)"
+#
+#   gcloud="${region}//${zone}"
+#
+#   echo -n "%{$color%}$LINUX_ICON $gcloud%{%f%}"
+# }
+
+# POWERLEVEL9K_CUSTOM_GCLOUD_ACCOUNT="zsh_gcloud_account"
+
 # === Powerlevel9k theme settings ===
 # Project page: https://github.com/bhilburn/powerlevel9k
-POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(aws virtualenv nvm command_execution_time time)
+POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext aws)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(virtualenv nvm command_execution_time time)
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
 POWERLEVEL9K_PROMPT_ON_NEWLINE=true
 POWERLEVEL9K_STATUS_VERBOSE=false
@@ -28,6 +43,9 @@ POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
 export UPDATE_ZSH_DAYS=13
 export HISTCONTROL=ignoreboth:erasedups
 export LANG=en_US.UTF-8
+
+# Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
+export PYTHONIOENCODING='UTF-8'
 
 # All of our zsh files
 typeset -U config_files

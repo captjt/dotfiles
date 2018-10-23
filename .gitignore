@@ -37,3 +37,7 @@ Temporary Items
 # Folders:
 .SublimeREPLHistory/
 Package Control.cache/
+
+emacs.d
+
+!/emacs.d/init.el
