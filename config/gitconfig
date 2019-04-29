@@ -15,12 +15,13 @@
   ec = config --global -e
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
   prune-all = !git remote | xargs -n 1 git remote prune
+  pl = pull
   st = status
   who = shortlog -s --
 
 [core]
   excludesfile = ~/.gitignore_global
-  editor = subl
+  editor = vim
   pager = diff-so-fancy | less --tabs=4 -RFX
 
 [commit]
@@ -52,6 +53,9 @@
 
 [diff-so-fancy]
   stripLeadingSymbols = false
+
+[diff "sopsdiffer"]
+  textconv = "sops -d"
 
 # Allow local customizations in the .gitconfig_local file
 [include]

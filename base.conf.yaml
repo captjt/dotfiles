@@ -12,7 +12,3 @@
 
     # Editors:
     ~/.editorconfig: config/editorconfig
-
-    ~/.emacs.d:
-      path: emacs.d
-      create: true

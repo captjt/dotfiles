@@ -14,12 +14,13 @@ alias afk="/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resourc
 # Copy public key to clipboard:
 alias pubkey="cat ~/.ssh/id_rsa.pub | pbcopy | echo '-> Public key copied to pasteboard.'"
 
+# lsd >> ls: see github.com/Peltoche/lsd
+alias ls='lsd'
 alias l='ls -laFh'
 alias ll='ls -l'
+alias la='ls -la'
 alias ldot='ls -ld .*'
-
-# mmake >> make: see github.com/tj/mmake
-alias make='mmake'
+alias lt='ls --tree'
 
 # nvim >> vim: see neovim.io
 alias vim='nvim'

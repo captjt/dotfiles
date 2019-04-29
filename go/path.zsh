@@ -13,3 +13,4 @@ fi
 export PATH=$PATH:$GOPATH/bin
 export PATH=$PATH:$GOROOT/bin
 export GOTRACEBACK=all # Get all goroutines trace and not just the crashing one
+export GO111MODULE=on

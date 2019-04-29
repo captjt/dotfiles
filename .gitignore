@@ -41,3 +41,5 @@ Package Control.cache/
 emacs.d
 
 !/emacs.d/init.el
+
+signatures

@@ -48,3 +48,4 @@ brew "yarn", args: ["without-node"]
 brew "zsh-syntax-highlighting"
 brew "boz/repo/kail"
 brew "dtan4/dtan4/k8sec"
+brew "lsd"
