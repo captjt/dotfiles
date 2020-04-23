@@ -1,0 +1,42 @@
+# Don't print a new line at the start of the prompt
+add_newline = false
+
+prompt_order = [
+  "username",
+  "hostname",
+  "kubernetes",
+  "directory",
+  "git_branch",
+  "git_commit",
+  "git_state",
+  "git_status",
+  "python",
+  "cmd_duration",
+  "time",
+  "line_break",
+  "character",
+]
+
+[aws]
+disabled = true
+
+[character]
+symbol = "✪ "
+
+[directory]
+truncation_length = 3
+
+[golang]
+symbol = " "
+
+[kubernetes]
+symbol = "⎈ "
+disabled = false
+
+[python]
+symbol = " "
+pyenv_version_name = false
+
+# Disable the package module, hiding it from the prompt completely
+[package]
+disabled = true

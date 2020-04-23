@@ -1,19 +1,21 @@
 # .zshrc file with all of my ZSH configurations and settings.
 
 export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH=~/.local/bin:$PATH
+export PATH=$HOME/.local/bin:$PATH
 
 # Shortcut to this dotfiles path is $DOTFILES
 export DOTFILES="$HOME/.dotfiles"
 
 # Default editor.
 if [[ -n $SSH_CONNECTION ]]; then
-  export EDITOR='code'
+  export EDITOR='vim'
 else
-  export EDITOR='code'
+  export EDITOR='subl'
 fi
 
 bindkey -e
+
+eval "$(starship init zsh)"
 
 # zsh_gcloud_account() {
 #   local region zone color
@@ -32,13 +34,13 @@ bindkey -e
 
 # === Powerlevel9k theme settings ===
 # Project page: https://github.com/bhilburn/powerlevel9k
-POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext aws)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(virtualenv nvm command_execution_time time)
-POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
-POWERLEVEL9K_PROMPT_ON_NEWLINE=true
-POWERLEVEL9K_STATUS_VERBOSE=false
-POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
+# POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
+# POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext aws)
+# POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(pyenv command_execution_time)
+# POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
+# POWERLEVEL9K_PROMPT_ON_NEWLINE=true
+# POWERLEVEL9K_STATUS_VERBOSE=false
+# POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
 
 export UPDATE_ZSH_DAYS=13
 export HISTCONTROL=ignoreboth:erasedups
@@ -83,23 +85,3 @@ unset config_files updated_at
 #  versioned repo.
 # shellcheck disable=SC1090
 [ -f ~/.localrc ] && . ~/.localrc
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/jordan.taylor/Downloads/google-cloud-sdk 2/path.zsh.inc' ]; then . '/Users/jordan.taylor/Downloads/google-cloud-sdk 2/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/jordan.taylor/Downloads/google-cloud-sdk 2/completion.zsh.inc' ]; then . '/Users/jordan.taylor/Downloads/google-cloud-sdk 2/completion.zsh.inc'; fi
-
-# tabtab source for serverless package
-# uninstall by removing these lines or running `tabtab uninstall serverless`
-[[ -f /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/serverless.zsh ]] && . /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/serverless.zsh
-# tabtab source for sls package
-# uninstall by removing these lines or running `tabtab uninstall sls`
-[[ -f /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/sls.zsh ]] && . /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/sls.zsh
-# tabtab source for slss package
-# uninstall by removing these lines or running `tabtab uninstall slss`
-[[ -f /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/slss.zsh ]] && . /Users/jordan.taylor/.nvm/versions/node/v10.15.0/lib/node_modules/serverless/node_modules/tabtab/.completions/slss.zsh

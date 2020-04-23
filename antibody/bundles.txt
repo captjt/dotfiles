@@ -10,7 +10,14 @@ robbyrussell/oh-my-zsh path:plugins/aws
 StackExchange/blackbox
 
 # These should be last.
-bhilburn/powerlevel9k
-# denysdovhan/spaceship-prompt
-zsh-users/zsh-syntax-highlighting
+# Using starship instead of powerlevel9k for a bit :)
+# bhilburn/powerlevel9k
+
+# zsh-users/zsh-syntax-highlighting
+# Using the upgraded faster syntax highlighting
+zdharma/fast-syntax-highlighting
+
 zsh-users/zsh-history-substring-search
+
+# Buffalo completion
+1995parham/buffalo.zsh

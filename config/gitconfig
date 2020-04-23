@@ -5,7 +5,7 @@
 [alias]
   br = branch
   ca = commit --amend -C HEAD
-  cas = commit -a -S
+  cas = commit -a -S -m
   ci = commit
   cs = commit -S -m
   co = checkout
@@ -16,6 +16,7 @@
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
   prune-all = !git remote | xargs -n 1 git remote prune
   pl = pull
+  pu = push
   st = status
   who = shortlog -s --
 
@@ -64,3 +65,8 @@
   program = gpg
 [diff "sopsdiffer"]
   textconv = sops -d
+[filter "lfs"]
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
+  clean = git-lfs clean -- %f

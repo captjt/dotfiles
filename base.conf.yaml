@@ -12,3 +12,5 @@
 
     # Editors:
     ~/.editorconfig: config/editorconfig
+
+    ~/.config/starship.toml: config/starship.toml

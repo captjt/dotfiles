@@ -34,3 +34,6 @@ alias dex='docker exec -i -t'
 
 # Remove and prune all docker volumes
 alias dvp='docker system prune --volumes -fa'
+
+# Tail the logs starting with the latest 50 lines of a container
+alias dtail='docker logs -tf --tail="50" "$@"'
