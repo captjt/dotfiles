@@ -19,8 +19,8 @@ prompt_order = [
 ]
 
 [aws]
-disabled = false
-symbol = "  "
+disabled = true
+symbol = " "
 style = "bold blue"
 displayed_items = "region"
 
@@ -32,12 +32,17 @@ us-west-2 = "or"
 us-gov-west-1 = "gov"
 
 [character]
-symbol = "✪ "
+symbol = "[]"
+success_symbol = "[](bold green) "
+error_symbol = "[](bold red) "
 
 [directory]
 truncation_length = 3
 
 [env_var]
+disabled = true
+
+[gcloud]
 disabled = true
 
 [golang]
