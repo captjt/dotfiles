@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -e
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do SOURCE="$(readlink "$SOURCE")"; done
+ROOTDIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+VERSION="2.1.1"
+OS=""
+ARCH=""
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The terraform version to install (default v2.1.1)
+"
+}
+
+unamem="$(uname -m)"
+if [[ $unamem == *64* ]]; then
+  ARCH="amd64"
+else
+  echo "unsupported or unknown architecture: $unamem"
+  exit 1
+fi
+
+# Check for os settings
+uname="$(uname)"
+unameu=$(tr '[:lower:]' '[:upper:]' <<<"$uname")
+if [[ ${unameu} == *DARWIN* ]]; then
+  OS="darwin"
+elif [[ ${unameu} == *LINUX* ]]; then
+  OS="linux"
+else
+  echo "unsupported or unknown os: $uname"
+  exit 1
+fi
+
+install() {
+
+  mkdir -p /tmp/install_traefik && cd /tmp/install_traefik
+
+  local -r url='https://github.com/containous/traefik/releases/download/v'"$VERSION"'/traefik_v'"$VERSION"'_'"$OS"'_'"$ARCH"'.tar.gz'
+  echo "Download location: $url"
+
+  curl -LO $url
+
+  echo "Unzipping package..."
+  tar -xzvf 'traefik_v'"$VERSION"'_'"$OS"'_'"$ARCH"'.tar.gz'
+
+  chmod +x ./traefik
+  sudo mv ./traefik /usr/local/bin/traefik
+
+  echo "Cleaning up..."
+  cd "$ROOTDIR"
+  rm -rf /tmp/install_traefik
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      VERSION="$2"
+      if [ -z "$VERSION" ]; then
+        echo "traefik version cannot be empty"
+        exit 1
+      fi
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

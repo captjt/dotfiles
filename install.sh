@@ -11,7 +11,7 @@ DOTFILES="$HOME/.dotfiles"
 setup_antibody() {
 	command -v antibody >/dev/null && return
 
-	if which brew >/dev/null 2>&1; then
+	if command -v brew >/dev/null 2>&1; then
 		brew install getantibody/tap/antibody || brew upgrade antibody
 	else
 		curl -sL https://git.io/antibody | sh -s
@@ -23,7 +23,7 @@ setup_antibody() {
 setup_nvm() {
 	command -v nvm >/dev/null && return
 
-	NVM_VERSION="v0.34.0"
+	NVM_VERSION="v0.35.3"
 
 	curl -o- https://raw.githubusercontent.com/creationix/nvm/"$NVM_VERSION"/install.sh | bash
 }
@@ -39,17 +39,17 @@ setup_go() {
 setup_docker() {
 	mkdir -p "$HOME/.docker/completions"
 
-	if which docker-compose >/dev/null 2>&1; then
+	if command -v docker-compose >/dev/null 2>&1; then
 		curl -sL https://raw.githubusercontent.com/docker/compose/master/contrib/completion/zsh/_docker-compose \
 		-o "$HOME/.docker/completions/_docker-compose"
 	fi
 
-	if which docker-machine >/dev/null 2>&1; then
+	if command -v docker-machine >/dev/null 2>&1; then
 		curl -sL https://raw.githubusercontent.com/docker/machine/master/contrib/completion/zsh/_docker-machine \
 		-o "$HOME/.docker/completions/_docker-machine"
 	fi
 
-	if which docker >/dev/null 2>&1; then
+	if command -v docker >/dev/null 2>&1; then
 		curl -sL https://raw.githubusercontent.com/docker/cli/master/contrib/completion/zsh/_docker \
 		-o "$HOME/.docker/completions/_docker"
 	fi
@@ -62,6 +62,16 @@ setup_vscode() {
     	brew cask install visual-studio-code
 	else
 		sudo snap install vscode --classic
+  	fi
+}
+
+setup_starship() {
+	command -v starship >/dev/null && return
+
+	if [ "$(uname -s)" = "Darwin" ]; then
+    	brew install starship
+	else
+		curl -fsSL https://starship.rs/install.sh | bash
   	fi
 }
 
@@ -103,7 +113,8 @@ fi
 # Check your current shell. If your active shell is ZSH setup antibody.
 case $SHELL in
 */zsh)
-	setup_antibody
+	# setup_antibody
+	echo ' ZSH setup is good to go. Start a new shell session!'
 	;;
 *)
 	echo ' Activate ZSH!'
@@ -114,3 +125,4 @@ esac
 setup_docker
 setup_go
 setup_nvm
+setup_starship

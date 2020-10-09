@@ -10,3 +10,7 @@ done
 
 # Add .local zsh completions if you have any defined.
 fpath=(~/.local/zsh_completions $fpath)
+
+if [ "$(uname -s)" = "Darwin" ]; then
+  fpath=(/usr/local/share/zsh/site-functions $fpath)
+fi

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -e
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The notary version to install (default $VERSION)
+"
+}
+
+VERSION="v0.6.1"
+OS=""
+ARCH=""
+
+unamem="$(uname -m)"
+if [[ $unamem == *64* ]]; then
+  ARCH="amd64"
+else
+  echo "unsupported or unknown architecture: $unamem"
+  exit 1
+fi
+
+# Check for os settings
+uname="$(uname)"
+unameu=$(tr '[:lower:]' '[:upper:]' <<<"$uname")
+if [[ ${unameu} == *DARWIN* ]]; then
+  OS="Darwin"
+elif [[ ${unameu} == *LINUX* ]]; then
+  OS="Linux"
+else
+  echo "unsupported or unknown os: $uname"
+  exit 1
+fi
+
+install() {
+
+  local -r url="https://github.com/theupdateframework/notary/releases/download/$VERSION/notary-$OS-$ARCH"
+  echo "Download location: $url"
+
+  curl -LO "$url"
+
+  chmod +x "./notary-$OS-$ARCH"
+  sudo mv "./notary-$OS-$ARCH" /usr/local/bin/notary
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      if [ -z "$2" ]; then
+        echo "notary version cannot be empty"
+        exit 1
+      fi
+      VERSION="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

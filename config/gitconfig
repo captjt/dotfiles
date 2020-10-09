@@ -13,12 +13,16 @@
   dc = diff --cached
   df = diff
   ec = config --global -e
+  lab = branch --list --remote
   lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
   prune-all = !git remote | xargs -n 1 git remote prune
   pl = pull
   pu = push
   st = status
   who = shortlog -s --
+
+[pull]
+  rebase = false
 
 [core]
   excludesfile = ~/.gitignore_global

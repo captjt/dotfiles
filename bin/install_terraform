@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -e
+
+VERSION="0.12.3"
+OS=""
+ARCH=""
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+    -v, --version {X.X.X}     The terraform version to install (default 0.12.3)
+"
+}
+
+unamem="$(uname -m)"
+if [[ $unamem == *64* ]]; then
+  ARCH="amd64"
+else
+  echo "unsupported or unknown architecture: $unamem"
+  exit 1
+fi
+
+# Check for os settings
+uname="$(uname)"
+unameu=$(tr '[:lower:]' '[:upper:]' <<<"$uname")
+if [[ ${unameu} == *DARWIN* ]]; then
+  OS="darwin"
+elif [[ ${unameu} == *LINUX* ]]; then
+  OS="linux"
+else
+  echo "unsupported or unknown os: $uname"
+  exit 1
+fi
+
+install() {
+
+  local -r url='https://releases.hashicorp.com/terraform/'"$VERSION"'/terraform_'"$VERSION"'_'"$OS"'_'"$ARCH"'.zip'
+  echo "Download location: $url"
+
+  curl -LO $url
+
+  echo "Unzipping package..."
+  unzip 'terraform_'"$VERSION"'_'"$OS"'_'"$ARCH"'.zip'
+
+  chmod +x ./terraform
+  sudo mv ./terraform /usr/local/bin/terraform
+
+  echo "Cleaning up..."
+  rm 'terraform_'"$VERSION"'_'"$OS"'_'"$ARCH"'.zip'
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -v | --version)
+      VERSION="$2"
+      if [ -z "$VERSION" ]; then
+        echo "terraform version cannot be empty"
+        exit 1
+      fi
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+install

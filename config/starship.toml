@@ -11,6 +11,7 @@ prompt_order = [
   "git_state",
   "git_status",
   "python",
+  "aws",
   "cmd_duration",
   "time",
   "line_break",
@@ -18,13 +19,26 @@ prompt_order = [
 ]
 
 [aws]
-disabled = true
+disabled = false
+symbol = "  "
+style = "bold blue"
+displayed_items = "region"
+
+[aws.region_aliases]
+us-east-1 = "va"
+us-east-2 = "oh"
+us-west-1 = "ca"
+us-west-2 = "or"
+us-gov-west-1 = "gov"
 
 [character]
 symbol = "✪ "
 
 [directory]
 truncation_length = 3
+
+[env_var]
+disabled = true
 
 [golang]
 symbol = " "
