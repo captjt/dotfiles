@@ -9,6 +9,7 @@
 
     # Git:
     ~/.gitconfig: config/gitconfig
+    ~/.gitattributes: config/gitattributes
 
     # Editors:
     ~/.editorconfig: config/editorconfig

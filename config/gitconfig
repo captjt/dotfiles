@@ -25,6 +25,7 @@
   rebase = false
 
 [core]
+  attributesfile = ~/.gitattributes
   excludesfile = ~/.gitignore_global
   editor = vim
   pager = diff-so-fancy | less --tabs=4 -RFX
