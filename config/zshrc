@@ -1,5 +1,6 @@
 # .zshrc file with all of my ZSH configurations and settings.
 
+export PATH=/usr/local/sbin:$PATH
 export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH=$HOME/.local/bin:$PATH
 

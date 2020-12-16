@@ -19,6 +19,13 @@ format = """\
   $character\
   """
 
+[username]
+style_user = "bold green"
+style_root = "bold red"
+format = "[$user]($style) 🚀 "
+disabled = false
+show_always = true
+
 [aws]
 disabled = true
 symbol = " "
@@ -33,7 +40,7 @@ us-west-2 = "or"
 us-gov-west-1 = "gov"
 
 [character]
-symbol = "[]"
+symbol = ""
 success_symbol = "[](bold green) "
 error_symbol = "[ﭸ](bold red) "
 
@@ -64,3 +71,4 @@ disabled = true
 # Disable the package module, hiding it from the prompt completely
 [package]
 disabled = true
+
