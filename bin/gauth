@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -e
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help                Help
+
+    Authenticate with both gcloud commands:
+      gcloud auth login (and)
+      gcloud auth application-default login
+"
+}
+
+authenticate() {
+  gcloud auth login
+  gcloud auth application-default login
+}
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+authenticate
+

@@ -40,7 +40,6 @@ us-west-2 = "or"
 us-gov-west-1 = "gov"
 
 [character]
-symbol = ""
 success_symbol = "[](bold green) "
 error_symbol = "[ﭸ](bold red) "
 
@@ -61,8 +60,9 @@ symbol = "⎈ "
 disabled = false
 
 [python]
+format = "via [${symbol}(${version} )]($style)"
 symbol = " "
-pyenv_version_name = true
+pyenv_version_name = false
 pyenv_prefix = ""
 
 [nodejs]

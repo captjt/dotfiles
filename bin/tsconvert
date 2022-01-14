@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# Google Cloud Log timestamp converter
+#
+# Standard format for GCP log entries:
+#   YYYY-MM-DDTHH:MM:SS.SSSZ
+#
+
+import argparse
+import datetime
+from dateutil import tz
+
+parser = argparse.ArgumentParser(description="GCP log timestamp conversion.")
+parser.add_argument(
+    "timestamp", metavar="N", type=str, nargs=1, help="a timestamp for the converter"
+)
+args = parser.parse_args()
+
+ts = args.timestamp[0]
+ts = ts.replace("T", " ")
+ts = ts.replace("Z", "")
+
+length = len(ts)
+
+ts = ts[: length - 3]
+
+from_zone = tz.gettz("UTC")
+to_zone = tz.tzlocal()
+
+date_time_obj = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S.%f")
+
+# Tell the datetime object that it's in UTC time zone since
+# datetime objects are 'naive' by default
+utc = date_time_obj.replace(tzinfo=from_zone)
+
+# Convert time zone
+local_time = utc.astimezone(to_zone)
+
+print("Date:      ", local_time.date())
+print("Time:      ", local_time.time())
+print("Date-time: ", local_time)
