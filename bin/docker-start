@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+limactl start "$HOME/docker.yaml"
+export DOCKER_HOST=unix://$HOME/.lima/docker/sock/docker.sock
+docker version

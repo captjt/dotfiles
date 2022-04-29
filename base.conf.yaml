@@ -15,3 +15,5 @@
     ~/.editorconfig: config/editorconfig
 
     ~/.config/starship.toml: config/starship.toml
+
+    ~/docker.yaml: config/docker.yaml
