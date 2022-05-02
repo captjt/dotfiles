@@ -1,7 +1,6 @@
 [user]
   name = captjt
   email = jtaylor007.jt@gmail.com
-  signingkey = 0797B647307B3033
 
 [alias]
   br = branch

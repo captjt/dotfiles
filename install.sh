@@ -16,6 +16,7 @@ setup_antibody() {
 	else
 		curl -sL https://git.io/antibody | sh -s
 	fi
+
 	antibody bundle < "$DOTFILES/antibody/bundles.txt" > ~/.zsh_plugins.sh
 	antibody update
 }
@@ -23,7 +24,7 @@ setup_antibody() {
 setup_nvm() {
 	command -v nvm >/dev/null && return
 
-	NVM_VERSION="v0.35.3"
+	NVM_VERSION="v0.39.1"
 
 	curl -o- https://raw.githubusercontent.com/creationix/nvm/"$NVM_VERSION"/install.sh | bash
 }
