@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+
+install() {
+  command -v gcloud >/dev/null && return
+  curl https://sdk.cloud.google.com | bash
+}
+
+install
+
+echo 'Restart your shell:'
+# shellcheck disable=SC2016
+echo '  $ exec -l $SHELL'
