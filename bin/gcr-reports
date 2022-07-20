@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -e
+
+gcr_base_registry='us.gcr.io/'
+
+usage() {
+  echo -e "\
+Usage: $0 [options]
+    -h, --help        Help
+    -d, --date        Date format YYYY-MM
+    -r, --registry    GCR registry. Default: $gcr_base_registry
+
+    Get a report for total containers built within a given month:
+      gcr-reports -d 2022-06 -r us.gcr.io/awesome-project-name
+"
+}
+
+generate_report() {
+  # Update the list of containers as needed.
+  containers=(raven similarity-gadget rooster rooster-docengine rooster-analytics brs-parser)
+
+  local -r report_date="$1"
+  local -r registry="$2"
+
+  echo "Report Month: $report_date"
+  echo "Registry: $registry"
+
+  total=0
+
+  for val in "${containers[@]}"; do
+    container="$registry/$val"
+    t=$(gcloud container images list-tags "$container" | grep "$report_date" | wc -l)
+    echo "$container"
+    echo "  total: $t"
+
+    # shellcheck disable=SC2004
+    total=$(( $total + $t ))
+  done
+
+  echo "Monthly total: $total"
+}
+
+REPORT_DATE=""
+
+while [ "$1" != "" ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -d | --date)
+      REPORT_DATE="$2"
+      shift 2
+      ;;
+    -r | --registry)
+      gcr_base_registry="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+generate_report "$REPORT_DATE" "$gcr_base_registry"
+
