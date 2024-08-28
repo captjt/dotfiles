@@ -12,19 +12,19 @@ setup_antibody() {
 	command -v antibody >/dev/null && return
 
 	if command -v brew >/dev/null 2>&1; then
-		brew install getantibody/tap/antibody || brew upgrade antibody
+		brew install antidote || brew upgrade antidote
 	else
 		curl -sL https://git.io/antibody | sh -s
 	fi
 
-	antibody bundle < "$DOTFILES/antibody/bundles.txt" > ~/.zsh_plugins.sh
-	antibody update
+	antidote bundle < "$HOME/.dotfiles/antibody/bundles.txt" > ~/.zsh_plugins.sh
+	antidote update
 }
 
 setup_nvm() {
 	command -v nvm >/dev/null && return
 
-	NVM_VERSION="v0.39.1"
+	NVM_VERSION="v0.39.5"
 
 	curl -o- https://raw.githubusercontent.com/creationix/nvm/"$NVM_VERSION"/install.sh | bash
 }
@@ -123,7 +123,7 @@ case $SHELL in
 	exit 1
 esac
 
-setup_docker
-setup_go
+# setup_docker
+# setup_go
 setup_nvm
 setup_starship

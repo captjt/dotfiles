@@ -22,7 +22,7 @@ format = """\
 [username]
 style_user = "bold green"
 style_root = "bold red"
-format = "[$user]($style) 🚀 "
+format = "[$user]($style) "
 disabled = false
 show_always = true
 
@@ -40,8 +40,8 @@ us-west-2 = "or"
 us-gov-west-1 = "gov"
 
 [character]
-success_symbol = "[](bold green) "
-error_symbol = "[ﭸ](bold red) "
+success_symbol = "[❯](bold green) "
+error_symbol = "[❯](bold red) "
 
 [directory]
 truncation_length = 3
@@ -71,4 +71,3 @@ disabled = true
 # Disable the package module, hiding it from the prompt completely
 [package]
 disabled = true
-

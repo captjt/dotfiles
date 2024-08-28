@@ -12,5 +12,5 @@ done
 fpath=(~/.local/zsh_completions $fpath)
 
 if [ "$(uname -s)" = "Darwin" ]; then
-  fpath=(/usr/local/share/zsh/site-functions $fpath)
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
 fi

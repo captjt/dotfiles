@@ -5,7 +5,7 @@ export CDPATH=$GOPATH/src/github.com
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:$GOBIN"
 
 if [ "$(uname -s)" = "Darwin" ]; then
-  export GOROOT=/usr/local/opt/go/libexec
+  export GOROOT=/opt/homebrew/opt/go/libexec
 elif [ "$(uname -s)" = "Linux" ]; then
   export GOROOT=/usr/local/go
 fi
