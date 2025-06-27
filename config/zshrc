@@ -11,37 +11,12 @@ export DOTFILES="$HOME/.dotfiles"
 if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='nvim'
 else
-  export EDITOR='code'
+  export EDITOR='zed'
 fi
 
 bindkey -e
 
 eval "$(starship init zsh)"
-
-# zsh_gcloud_account() {
-#   local region zone color
-#
-#   color='%F{green}'
-#
-#   region="$(gcloud config get-value compute/region 2>/dev/null)"
-#   zone="$(gcloud config get-value compute/zone 2>/dev/null)"
-#
-#   gcloud="${region}//${zone}"
-#
-#   echo -n "%{$color%}$LINUX_ICON $gcloud%{%f%}"
-# }
-
-# POWERLEVEL9K_CUSTOM_GCLOUD_ACCOUNT="zsh_gcloud_account"
-
-# === Powerlevel9k theme settings ===
-# Project page: https://github.com/bhilburn/powerlevel9k
-# POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
-# POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs kubecontext aws)
-# POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(pyenv command_execution_time)
-# POWERLEVEL9K_RPROMPT_ON_NEWLINE=false
-# POWERLEVEL9K_PROMPT_ON_NEWLINE=true
-# POWERLEVEL9K_STATUS_VERBOSE=false
-# POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
 
 export UPDATE_ZSH_DAYS=13
 export HISTCONTROL=ignoreboth:erasedups

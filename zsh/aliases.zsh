@@ -14,13 +14,14 @@ alias afk="/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resourc
 # Copy public key to clipboard:
 alias pubkey="cat ~/.ssh/id_rsa.pub | pbcopy | echo '-> Public key copied to pasteboard.'"
 
-# lsd >> ls: see github.com/Peltoche/lsd
+# Use eza and lsd for enhanced file navigation
 alias ls='lsd'
-alias l='ls -laFh'
-alias ll='ls -l'
-alias la='ls -la'
+alias l='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first'
+alias ll='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first -l --git -h'
+alias la='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first -a'
+alias lla='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first -a -l --git -h'
 alias ldot='ls -ld .*'
-alias lt='ls --tree'
+alias lt='lss --tree'
 
 # nvim >> vim: see neovim.io
 alias vim='nvim'
