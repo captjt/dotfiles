@@ -32,7 +32,9 @@
 
 [commit]
   template = ~/.stCommitMsg
-  gpgsign = false
+
+[merge]
+  gpgSign = true
 
 [credential]
   helper = osxkeychain

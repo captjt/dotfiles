@@ -21,7 +21,11 @@ alias ll='eza --color=always --color-scale=all --color-scale-mode=gradient --ico
 alias la='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first -a'
 alias lla='eza --color=always --color-scale=all --color-scale-mode=gradient --icons=always --group-directories-first -a -l --git -h'
 alias ldot='ls -ld .*'
-alias lt='lss --tree'
+alias lt='lsd --tree'
 
 # nvim >> vim: see neovim.io
 alias vim='nvim'
+
+# Use bat instead of cat
+alias cat='bat --paging=never'
+alias catp='bat' # With paging
