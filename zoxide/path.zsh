@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 # Initialize zoxide (smarter cd)
 if command -v zoxide &>/dev/null; then
   eval "$(zoxide init zsh)"

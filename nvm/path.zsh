@@ -1,10 +1,5 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 export NVM_DIR="$HOME/.nvm"
-nvm() {
-  unfunction nvm node npm npx
-  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-  nvm "$@"
-}
-node() { nvm; node "$@" }
-npm() { nvm; npm "$@" }
-npx() { nvm; npx "$@" }
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion.sh" ] && \. "$NVM_DIR/bash_completion.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion

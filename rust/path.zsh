@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 
 # If npm is installed this will provide basic npm ZSH completion.
 #
