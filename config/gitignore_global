@@ -1,0 +1,46 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/settings.json
+.idea/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.kubeconfig
+credentials.json
+secrets.json
+
+# Agent and scratch output
+agent-handoff.md
+codex-handoff.md
+.codex/
+.claude/
+.opencode/
+.agent/
+*.last-run
+*.bak
+*.tsbuildinfo
+
+# Build and cache noise
+.cache/
+.tmp/
+tmp/
+dist/
+build/
+coverage/
+node_modules/

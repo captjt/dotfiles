@@ -34,10 +34,16 @@ for file in ${(M)config_files:#*/path.zsh}; do
   source "$file"
 done
 
-# source antidote
-source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
-# initialize plugins statically with ${ZDOTDIR:-~}/.zsh_plugins.txt
-antidote load $HOME/.zsh_plugins.txt
+# Load antidote plugins when installed.
+if [ -f "$HOME/.zsh_plugins.zsh" ]; then
+  source "$HOME/.zsh_plugins.zsh"
+elif [ -r /opt/homebrew/opt/antidote/share/antidote/antidote.zsh ]; then
+  source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
+  antidote load "$DOTFILES/antibody/bundles.txt"
+elif [ -r /usr/local/opt/antidote/share/antidote/antidote.zsh ]; then
+  source /usr/local/opt/antidote/share/antidote/antidote.zsh
+  antidote load "$DOTFILES/antibody/bundles.txt"
+fi
 
 # Load everything but the path and completion files
 for file in ${${config_files:#*/path.zsh}:#*/completion.zsh}; do

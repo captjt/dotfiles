@@ -19,7 +19,7 @@ kfl() {
 
   if [ -z "$1" ]; then
     kfl_usage
-    exit 1
+    return 1
   fi
 
   if [ -z "$2" ]; then
@@ -36,7 +36,7 @@ ksl() {
 
   if [ -z "$1" ]; then
     echo "Pass in selector key=value"
-    exit 1
+    return 1
   fi
 
   if [ -z "$2" ]; then

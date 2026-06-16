@@ -28,13 +28,17 @@
   attributesfile = ~/.gitattributes
   excludesfile = ~/.gitignore_global
   editor = nvim
-  pager = diff-so-fancy | less --tabs=4 -RFX
+  pager = delta
 
 [commit]
   template = ~/.stCommitMsg
 
 [merge]
   gpgSign = true
+  conflictstyle = zdiff3
+
+[interactive]
+  diffFilter = delta --color-only
 
 [credential]
   helper = osxkeychain
@@ -73,6 +77,12 @@
 
 [diff-so-fancy]
   stripLeadingSymbols = false
+
+[delta]
+  line-numbers = true
+  navigate = true
+  side-by-side = false
+  syntax-theme = OneHalfDark
 
 [diff "sopsdiffer"]
   textconv = "sops -d"

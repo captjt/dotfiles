@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-KUBECTL_VERION="v1.8.9"
+KUBECTL_VERSION="v1.8.9"
 OS=""
 ARCH=""
 
@@ -34,7 +34,8 @@ else
 fi
 
 install() {
-  curl -LO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERION/bin/$OS/$ARCH/kubectl
+  echo "Deprecated: prefer the Brewfile-managed kubernetes-cli package."
+  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/$OS/$ARCH/kubectl"
   chmod +x ./kubectl
   sudo mv ./kubectl /usr/local/bin/kubectl
 }
@@ -46,8 +47,8 @@ while [ "$1" != "" ]; do
       exit 0
       ;;
     -v | --version)
-      KUBECTL_VERION="$2"
-      if [ -z "$KUBECTL_VERION" ]; then
+      KUBECTL_VERSION="$2"
+      if [ -z "$KUBECTL_VERSION" ]; then
         echo "kubectl version cannot be empty"
         exit 1
       fi

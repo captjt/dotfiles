@@ -323,3 +323,12 @@ reload() {
 path() {
   echo $PATH | tr ':' '\n'
 }
+
+_confirm_action() {
+  local prompt="${1:-Continue?}"
+  local reply
+
+  printf "%s [y/N] " "$prompt"
+  read -r reply
+  [[ "$reply" == [yY] || "$reply" == [yY][eE][sS] ]]
+}

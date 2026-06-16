@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+tick='`'
+
+print_command_version() {
+  local name="$1"
+  shift
+
+  if command_exists "$name"; then
+    printf -- "- %s: " "$name"
+    "$@" 2>/dev/null | head -1 || echo "installed"
+  else
+    printf -- "- %s: missing\n" "$name"
+  fi
+}
+
+detect_files() {
+  local label="$1"
+  shift
+
+  for file in "$@"; do
+    if [[ -e "$file" ]]; then
+      printf -- "- %s: %s%s%s\n" "$label" "$tick" "$file" "$tick"
+      return
+    fi
+  done
+}
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+
+repo_name="$(basename "$repo_root")"
+branch="$(git branch --show-current 2>/dev/null || true)"
+current_ref="${branch:-detached or non-git}"
+
+printf "# Agent Handoff: %s\n\n" "$repo_name"
+printf "Generated: %s\n\n" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+printf "## Repository\n"
+printf -- "- Path: %s%s%s\n" "$tick" "$repo_root" "$tick"
+printf -- "- Ref: %s%s%s\n" "$tick" "$current_ref" "$tick"
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  printf -- "- HEAD: %s%s%s\n" "$tick" "$(git rev-parse --short HEAD)" "$tick"
+fi
+printf "\n"
+
+printf "## Working Tree\n"
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  status_output="$(git status --short)"
+  if [[ -n "$status_output" ]]; then
+    printf '%s\n%s\n%s\n\n' '```text' "$status_output" '```'
+    printf "### Diffstat\n"
+    diffstat="$(git diff --stat && git diff --cached --stat)"
+    if [[ -n "$diffstat" ]]; then
+      printf '%s\n%s\n%s\n\n' '```text' "$diffstat" '```'
+    else
+      printf "No diffstat available.\n\n"
+    fi
+  else
+    printf "Clean working tree.\n\n"
+  fi
+else
+  printf "Not inside a Git work tree.\n\n"
+fi
+
+printf "## Recent Commits\n"
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git log --oneline --decorate -8 2>/dev/null | sed 's/^/- /'
+else
+  printf -- "- Not available\n"
+fi
+printf "\n\n"
+
+printf "## Detected Tooling\n"
+detect_files "Just" "Justfile" "justfile" ".justfile"
+detect_files "Node" "package.json" "pnpm-lock.yaml" "yarn.lock" "package-lock.json" "bun.lock"
+detect_files "Go" "go.mod"
+detect_files "Rust" "Cargo.toml"
+detect_files "Python" "pyproject.toml" "requirements.txt" "uv.lock"
+detect_files "Terraform" ".terraform-version" "versions.tf" "main.tf"
+detect_files "Docker" "Dockerfile" "docker-compose.yml" "compose.yml"
+printf "\n"
+
+printf "## Likely Checks\n"
+if [[ -e "Justfile" || -e "justfile" || -e ".justfile" ]]; then
+  printf -- "- %sjust check%s\n" "$tick" "$tick"
+fi
+if [[ -e "package.json" ]]; then
+  if [[ -e "bun.lock" ]]; then
+    printf -- "- %sbun test%s\n" "$tick" "$tick"
+  elif [[ -e "pnpm-lock.yaml" ]]; then
+    printf -- "- %spnpm test%s\n" "$tick" "$tick"
+  elif [[ -e "yarn.lock" ]]; then
+    printf -- "- %syarn test%s\n" "$tick" "$tick"
+  else
+    printf -- "- %snpm test%s\n" "$tick" "$tick"
+  fi
+fi
+if [[ -e "go.mod" ]]; then
+  printf -- "- %sgo test ./...%s\n" "$tick" "$tick"
+fi
+if [[ -e "Cargo.toml" ]]; then
+  printf -- "- %scargo test%s\n" "$tick" "$tick"
+fi
+if [[ -e "pyproject.toml" ]]; then
+  printf -- "- %suv run pytest%s or project-specific Python tests\n" "$tick" "$tick"
+fi
+printf "\n"
+
+printf "## Tool Versions\n"
+print_command_version "git" git --version
+print_command_version "gh" gh --version
+print_command_version "codex" codex --version
+print_command_version "opencode" opencode --version
+print_command_version "bun" bun --version
+print_command_version "just" just --version
+print_command_version "go" go version
+print_command_version "cargo" cargo --version
+print_command_version "python3" python3 --version
+print_command_version "kubectl" kubectl version --client

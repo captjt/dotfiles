@@ -1,10 +1,7 @@
 /**
- * notify plugin - plays sound on task completion
+ * notify plugin - plays sound when a session becomes idle
  *
- * uses macos afplay to play system sounds when:
- * - swarm completes successfully
- * - swarm fails/aborts
- * - session becomes idle (response complete)
+ * uses macos afplay to play a system sound when a response completes
  */
 
 import type { Plugin } from "@opencode-ai/plugin";

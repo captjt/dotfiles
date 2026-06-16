@@ -8,6 +8,7 @@
     # Git:
     ~/.gitconfig: config/gitconfig
     ~/.gitattributes: config/gitattributes
+    ~/.gitignore_global: config/gitignore_global
 
     # Editors:
     ~/.editorconfig: config/editorconfig
@@ -21,3 +22,8 @@
     ~/.opencode/plugin: opencode/plugin
     ~/.opencode/package.json: opencode/package.json
     ~/.opencode/tsconfig.json: opencode/tsconfig.json
+
+    # Codex settings:
+    ~/.codex/AGENTS.md:
+      path: codex/AGENTS.md
+      create: true

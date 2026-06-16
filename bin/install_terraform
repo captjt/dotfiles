@@ -34,11 +34,12 @@ else
 fi
 
 install() {
+  echo "Deprecated: prefer tfenv, mise, or the Brewfile-managed Terraform tooling."
 
   local -r url='https://releases.hashicorp.com/terraform/'"$VERSION"'/terraform_'"$VERSION"'_'"$OS"'_'"$ARCH"'.zip'
   echo "Download location: $url"
 
-  curl -LO $url
+  curl -LO "$url"
 
   echo "Unzipping package..."
   unzip 'terraform_'"$VERSION"'_'"$OS"'_'"$ARCH"'.zip'

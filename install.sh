@@ -4,20 +4,25 @@
 set -e
 
 # Shortcut to this dotfiles path is $DOTFILES
-DOTFILES="$HOME/.dotfiles"
+export DOTFILES="$HOME/.dotfiles"
 
-# Setup and configure antibody.
-# Project page: https://github.com/getantibody/antibody
-setup_antibody() {
-	command -v antibody >/dev/null && return
+# Setup and configure antidote.
+# Project page: https://github.com/mattmc3/antidote
+setup_antidote() {
+	command -v antidote >/dev/null && {
+		antidote bundle < "$HOME/.dotfiles/antibody/bundles.txt" > ~/.zsh_plugins.zsh
+		antidote update
+		return
+	}
 
 	if command -v brew >/dev/null 2>&1; then
 		brew install antidote || brew upgrade antidote
 	else
-		curl -sL https://git.io/antibody | sh -s
+		echo "Homebrew is required to install antidote automatically."
+		return 0
 	fi
 
-	antidote bundle < "$HOME/.dotfiles/antibody/bundles.txt" > ~/.zsh_plugins.sh
+	antidote bundle < "$HOME/.dotfiles/antibody/bundles.txt" > ~/.zsh_plugins.zsh
 	antidote update
 }
 
@@ -26,7 +31,26 @@ setup_nvm() {
 
 	NVM_VERSION="v0.39.5"
 
-	curl -o- https://raw.githubusercontent.com/creationix/nvm/"$NVM_VERSION"/install.sh | bash
+	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/"$NVM_VERSION"/install.sh | bash
+}
+
+prepare_codex_agents_link() {
+	local codex_dir="$HOME/.codex"
+	local agents_file="$codex_dir/AGENTS.md"
+
+	mkdir -p "$codex_dir"
+
+	if [ -L "$agents_file" ]; then
+		return
+	fi
+
+	if [ -e "$agents_file" ]; then
+		if [ ! -s "$agents_file" ]; then
+			rm "$agents_file"
+		else
+			mv "$agents_file" "$agents_file.backup.$(date +%Y%m%d%H%M%S)"
+		fi
+	fi
 }
 
 setup_go() {
@@ -57,13 +81,13 @@ setup_docker() {
 }
 
 setup_vscode() {
-  	command -v code >/dev/null && return
+	command -v code >/dev/null && return
 
 	if [ "$(uname -s)" = "Darwin" ]; then
-    	brew cask install visual-studio-code
+		brew install --cask visual-studio-code
 	else
 		sudo snap install vscode --classic
-  	fi
+	fi
 }
 
 setup_starship() {
@@ -90,6 +114,7 @@ BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #  brews from Brewfile.
 cd "${BASEDIR}"
 git submodule update --init --recursive "${DOTBOT_DIR}"
+prepare_codex_agents_link
 
 # Check the OS - install Brews with dotbot-brew if on Darwin based machine.
 if [ "$(uname -s)" = "Darwin" ]; then
@@ -114,7 +139,7 @@ fi
 # Check your current shell. If your active shell is ZSH setup antibody.
 case $SHELL in
 */zsh)
-	# setup_antibody
+	setup_antidote
 	echo ' ZSH setup is good to go. Start a new shell session!'
 	;;
 *)

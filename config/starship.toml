@@ -10,6 +10,7 @@ format = """\
   $git_commit\
   $git_state\
   $git_status\
+  $bun\
   $golang\
   $python\
   $aws\
@@ -38,6 +39,9 @@ us-east-2 = "oh"
 us-west-1 = "ca"
 us-west-2 = "or"
 us-gov-west-1 = "gov"
+
+[bun]
+format = 'via [🌭 $version](bold green) '
 
 [character]
 success_symbol = "[❯](bold green) "

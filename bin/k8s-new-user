@@ -8,43 +8,62 @@ Usage: $0 [options]
     -u, --username {username}   The username to create role binding for
     -n, --namespace {namespace} The namespace to create the role binding in
     -r, --role {role}           The specific role to create the binding with
+    -y, --yes                   Confirm this deprecated helper should run
+    --print-token               Print the generated service account token
 "
 }
 
 NAMESPACE="default"
-ROLE="cluster-admin"
+ROLE="view"
 USERNAME=""
+CONFIRM="false"
+PRINT_TOKEN="false"
 
 create_cluster_role_binding() {
+  echo "Deprecated: prefer short-lived user or workload identity flows over static service account tokens."
+  echo "Namespace: $NAMESPACE"
+  echo "Role: $ROLE"
+  echo "Username: $USERNAME"
+
+  if [[ "$CONFIRM" != "true" ]]; then
+    echo "Refusing to continue without --yes."
+    exit 1
+  fi
 
   # bindingname is the new user's role binding name.
   local bindingname="$USERNAME-role"
 
   echo "Creating serviceaccount: $USERNAME.."
-  kubectl create serviceaccount $USERNAME
+  kubectl create serviceaccount "$USERNAME" --namespace "$NAMESPACE"
 
-  local secret=$(kubectl get serviceaccount $USERNAME -o json | jq -r '.secrets[].name')
+  local secret
+  secret=$(kubectl get serviceaccount "$USERNAME" --namespace "$NAMESPACE" -o json | jq -r '.secrets[0].name // empty')
   echo "Service account secrets: $secret"
 
   echo "Deleting rolebinding if already it exists.."
-  kubectl delete clusterrolebinding $bindingname
+  kubectl delete clusterrolebinding "$bindingname" --ignore-not-found
 
   echo "Creating clusterrolebinding for $USERNAME with role $ROLE.."
-  kubectl create clusterrolebinding $bindingname \
-      --clusterrole $ROLE \
-      --serviceaccount "$NAMESPACE:$USER"
+  kubectl create clusterrolebinding "$bindingname" \
+      --clusterrole "$ROLE" \
+      --serviceaccount "$NAMESPACE:$USERNAME"
 
-  local context=$(kubectl config current-context)
-  echo "Getting service account's CA certificate.."
-  kubectl get secret $secret -o json | jq -r '.data["ca.crt"]' | base64 -D > "$USERNAME-$context-ca.crt"
-  echo "Service account's CA certificate found @ $USERNAME-$context-ca.crt"
+  local context
+  context=$(kubectl config current-context)
+  if [[ -n "$secret" ]]; then
+    echo "Getting service account's CA certificate.."
+    kubectl get secret "$secret" --namespace "$NAMESPACE" -o json | jq -r '.data["ca.crt"]' | base64 -D > "$USERNAME-$context-ca.crt"
+    echo "Service account's CA certificate found @ $USERNAME-$context-ca.crt"
+  else
+    echo "No legacy service account secret found. This is expected on newer Kubernetes clusters."
+  fi
 
-  echo "Certificate..."
-  cat "$USERNAME-$context-ca.crt"
-  echo ""
-
-  local user_token=$(kubectl get secret $secret -o json | jq -r '.data["token"]' | base64 -D)
-  echo "Service account user token: $user_token"
+  if [[ "$PRINT_TOKEN" == "true" ]]; then
+    echo "Service account user token:"
+    kubectl create token "$USERNAME" --namespace "$NAMESPACE"
+  else
+    echo "Token not printed. Re-run with --print-token if you intentionally need it."
+  fi
 }
 
 while [ "$1" != "" ]; do
@@ -76,6 +95,14 @@ while [ "$1" != "" ]; do
       fi
       USERNAME="$2"
       shift 2
+      ;;
+    -y | --yes)
+      CONFIRM="true"
+      shift
+      ;;
+    --print-token)
+      PRINT_TOKEN="true"
+      shift
       ;;
     *)
       shift

@@ -28,6 +28,7 @@ Temporary Items
 # custom
 *.bak
 *.last-run
+*.tsbuildinfo
 
 # Certificates:
 *.crt

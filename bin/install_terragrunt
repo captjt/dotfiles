@@ -34,10 +34,12 @@ else
 fi
 
 install() {
+  echo "Deprecated: prefer the Brewfile-managed terragrunt package."
+
   local -r url='https://github.com/gruntwork-io/terragrunt/releases/download/'"$VERSION"'/terragrunt_'"$OS"'_'"$ARCH"
   echo "Download location: $url"
 
-  curl -L $url -o terragrunt
+  curl -L "$url" -o terragrunt
   chmod +x ./terragrunt
   sudo mv ./terragrunt /usr/local/bin/terragrunt
 }

@@ -27,10 +27,13 @@ flog() {
 }
 # Fuzzy process kill
 fkill() {
-  local pid
+  local pid count signal
+  signal="${1:-9}"
   pid=$(ps -ef | sed 1d | fzf --multi | awk '{print $2}')
   if [ -n "$pid" ]; then
-    echo "$pid" | xargs kill -${1:-9}
+    count="$(echo "$pid" | wc -l | tr -d ' ')"
+    _confirm_action "Send signal $signal to $count process(es)?" || return 1
+    echo "$pid" | xargs kill -"$signal"
   fi
 }
 # Fuzzy kubernetes pod selector
