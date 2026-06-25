@@ -23,6 +23,11 @@
     ~/.opencode/package.json: opencode/package.json
     ~/.opencode/tsconfig.json: opencode/tsconfig.json
 
+    # Shared agent skills:
+    ~/.agents:
+      path: agents
+      create: true
+
     # Codex settings:
     ~/.codex/AGENTS.md:
       path: codex/AGENTS.md

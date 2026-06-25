@@ -8,6 +8,9 @@ default:
 
 check: shell-syntax shellcheck opencode-typecheck secrets
 
+agent-skills:
+  ./install.sh --agent-skills
+
 shell-syntax:
   zsh -n {{shell_files}}
   bash -n {{bash_files}}
