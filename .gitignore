@@ -44,3 +44,8 @@ emacs.d
 !/emacs.d/init.el
 
 signatures
+
+# Nix
+result
+result-*
+.direnv/

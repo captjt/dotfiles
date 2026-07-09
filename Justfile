@@ -27,6 +27,18 @@ secrets:
 brew-check:
   brew bundle check --file Brewfile
 
+nix-show:
+  nix flake show
+
+nix-build-home:
+  nix build --no-link .#homeConfigurations.jordan-aarch64-darwin.activationPackage
+
+nix-build-darwin:
+  nix build --no-link .#darwinConfigurations.Mac.system
+
+nix-format:
+  nix fmt
+
 doctor:
   echo "Dotfiles: $PWD"
   git status --short
