@@ -86,7 +86,6 @@ link_global_agent_skills_to_consumers() {
 	local consumer_dirs=(
 		"$HOME/.codex/skills"
 		"$HOME/.claude/skills"
-		"$HOME/.config/opencode/skills"
 		"$HOME/.factory/skills"
 	)
 

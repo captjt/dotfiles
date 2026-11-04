@@ -116,7 +116,6 @@ printf "## Tool Versions\n"
 print_command_version "git" git --version
 print_command_version "gh" gh --version
 print_command_version "codex" codex --version
-print_command_version "opencode" opencode --version
 print_command_version "bun" bun --version
 print_command_version "just" just --version
 print_command_version "go" go version

@@ -30,7 +30,6 @@ agent-handoff.md
 codex-handoff.md
 .codex/
 .claude/
-.opencode/
 .agent/
 *.last-run
 *.bak

@@ -20,12 +20,6 @@
     # Global npm packages installed with every new nvm Node version:
     ~/.nvm/default-packages: nvm/default-packages
 
-    # OpenCode settings:
-    ~/.config/opencode/opencode.json: opencode/opencode.jsonc
-    ~/.opencode/plugin: opencode/plugin
-    ~/.opencode/package.json: opencode/package.json
-    ~/.opencode/tsconfig.json: opencode/tsconfig.json
-
     # Shared agent skills:
     ~/.agents:
       path: agents

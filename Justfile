@@ -6,7 +6,7 @@ bash_files := "install.sh bin/agent-handoff bin/rex-agent bin/gauth bin/gcr-repo
 default:
   just --list
 
-check: shell-syntax shellcheck opencode-typecheck secrets
+check: shell-syntax shellcheck secrets
 
 agent-skills:
   ./install.sh --agent-skills
@@ -17,9 +17,6 @@ shell-syntax:
 
 shellcheck:
   shellcheck {{bash_files}}
-
-opencode-typecheck:
-  cd opencode && bun install --frozen-lockfile && bun run typecheck
 
 secrets:
   if command -v gitleaks >/dev/null 2>&1; then gitleaks detect --source . --redact; else echo "gitleaks is not installed"; fi
@@ -43,7 +40,6 @@ doctor:
   echo "Dotfiles: $PWD"
   git status --short
   command -v codex >/dev/null 2>&1 && codex --version 2>/dev/null || true
-  command -v opencode >/dev/null 2>&1 && opencode --version 2>/dev/null || true
   command -v gh >/dev/null 2>&1 && gh --version | head -1 || true
   command -v direnv >/dev/null 2>&1 && direnv version || true
   command -v mise >/dev/null 2>&1 && mise --version || true

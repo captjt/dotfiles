@@ -12,7 +12,7 @@
         echo "Backed up existing $path to $backup_path"
       }
 
-      for consumer_dir in "$HOME/.codex/skills" "$HOME/.claude/skills" "$HOME/.config/opencode/skills" "$HOME/.factory/skills"; do
+      for consumer_dir in "$HOME/.codex/skills" "$HOME/.claude/skills" "$HOME/.factory/skills"; do
         consumer_parent="$(dirname "$consumer_dir")"
         [ -d "$consumer_parent" ] || continue
 

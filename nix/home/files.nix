@@ -16,11 +16,6 @@
 
     ".nvm/default-packages".source = dotfilesPath + /nvm/default-packages;
 
-    ".config/opencode/opencode.json".source = dotfilesPath + /opencode/opencode.jsonc;
-    ".opencode/package.json".source = dotfilesPath + /opencode/package.json;
-    ".opencode/plugin".source = dotfilesPath + /opencode/plugin;
-    ".opencode/tsconfig.json".source = dotfilesPath + /opencode/tsconfig.json;
-
     ".agents".source = dotfilesPath + /agents;
 
     ".config/rex".source = dotfilesPath + /rex;
