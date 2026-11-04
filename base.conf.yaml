@@ -31,6 +31,9 @@
       path: agents
       create: true
 
+    # Rex config (init.lua loads any local actions):
+    ~/.config/rex: rex
+
     # Codex settings:
     ~/.codex/AGENTS.md:
       path: codex/AGENTS.md

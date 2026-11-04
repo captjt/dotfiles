@@ -1,0 +1,510 @@
+#!/usr/bin/env bash
+# rex-agent: run coding agents in Rex panes and drive them by name.
+#
+# Rex has panes, input, capture, and the OSC 7501 program status that
+# Claude Code and Codex report on their own. This adds the agent layer on
+# top: start an agent and wait until it is ready, submit a prompt and wait
+# for the turn to settle, and refuse to type into an agent that is waiting
+# on an approval.
+set -euo pipefail
+
+prog=rex-agent
+poll=0.25
+stall_after=10
+
+usage() {
+	cat <<'EOF'
+rex-agent: run coding agents in Rex panes and drive them by name.
+
+Usage:
+  rex-agent start NAME [options] [-- AGENT_ARGS...]
+      Open a pane labeled NAME, start the agent in it, and wait until it
+      reports idle.
+        --kind PROGRAM   agent program to run (default: claude; also codex)
+        --tab            open a new tab instead of splitting
+        --split DIR      right, below, left, or above (default: right when
+                         the anchor is wider than tall, otherwise below)
+        --ratio PCT      share of the split for the new pane (default 50)
+        --anchor PANE    pane to split beside (default: $REX_BLOCK; a new
+                         tab when -s names another session)
+        --cwd DIR        working directory (default: current directory)
+        --focus          focus the new pane (default: keep focus)
+        --timeout SECS   give up waiting for ready (default 120)
+
+  rex-agent prompt NAME TEXT|- [--wait] [--timeout SECS] [--force]
+      Paste TEXT (or stdin with -) into the agent and press Enter. Refuses
+      an agent that is blocked, and one that is working unless --force.
+      With --wait, waits until the turn settles (idle, done, blocked, or
+      error). No timeout by default.
+
+  rex-agent wait NAME [--until STATE] [--timeout SECS]
+      Wait until the agent is settled, or reaches STATE (idle, done,
+      blocked, error, working). Returns at once if it already is.
+
+  rex-agent get NAME          Print the agent's status as JSON.
+  rex-agent read NAME [--lines N]
+                              Print the last N lines of the pane (default
+                              120, 0 for all). Agents that draw on the
+                              alternate screen, like Codex, only show what
+                              is on screen now.
+  rex-agent keys NAME KEY...  Press keys, such as escape, enter, or ctrl+c.
+  rex-agent list [--json]     List the panes in the session that report a
+                              program status.
+  rex-agent close NAME        Close the pane and end the agent.
+
+Options for every command:
+  -s, --session SESSION   Rex session (default: $REX_SESSION)
+
+NAME is a pane label ([a-z][a-z0-9_-]{0,31}, unique in the session) or a
+full block ID.
+
+Exit status:
+  0  ready, idle, or done      4  error state, or the agent exited
+  1  usage or Rex failure      5  timed out
+  2  no such agent, or name    6  prompt stalled: no activity within 10s
+     in use                    7  busy: agent is working (prompt --force)
+  3  blocked: the agent is waiting on you (approval, question, login)
+
+Results are JSON on stdout. Read a blocked agent's screen before answering it.
+EOF
+}
+
+die() {
+	local code=$1
+	shift
+	printf '%s: %s\n' "$prog" "$*" >&2
+	exit "$code"
+}
+
+need_session() {
+	[[ -n ${session:-} ]] || die 1 "no session: run inside Rex or pass -s SESSION"
+}
+
+# Print the block ID for NAME (a label or a block ID) in the session.
+resolve() {
+	local target=$1 blocks matches count
+	blocks=$(rex block ls -s "$session" --json) || die 1 "cannot list panes in $session"
+	if [[ $target == block:* ]]; then
+		matches=$(jq -r --arg t "$target" '.blocks[] | select(.block_id == $t) | .block_id' <<<"$blocks")
+	else
+		matches=$(jq -r --arg t "$target" '.blocks[] | select(.label == $t) | .block_id' <<<"$blocks")
+	fi
+	count=$(grep -c . <<<"$matches" || true)
+	[[ $count -gt 0 ]] || die 2 "not_found: no pane named '$target' in this session"
+	[[ $count -eq 1 ]] || die 2 "ambiguous: $count panes are named '$target'; use the block ID"
+	printf '%s\n' "$matches"
+}
+
+block_exists() {
+	rex block ls -s "$session" --json 2>/dev/null |
+		jq -e --arg b "$1" 'any(.blocks[]; .block_id == $b)' >/dev/null
+}
+
+# Print the pane's root status record as JSON ({} when there is none).
+# Fails when the pane can't be read, for example because it closed.
+record() {
+	rex block call -s "$session" -b "$1" program_status 2>/dev/null |
+		jq -c '(.records // []) | map(select(.id == null)) | .[0] // {}'
+}
+
+emit() {
+	local name=$1 block=$2 rec=$3 extra=${4:-'{}'}
+	jq -nc --arg name "$name" --arg block "$block" --argjson rec "$rec" --argjson extra "$extra" '
+		{name: $name, block_id: $block, state: ($rec.state // "unknown"),
+		 kind: $rec.kind, msg: $rec.msg, app: ($rec.effective_app // $rec.app),
+		 updated_at: $rec.updated_at}
+		+ $extra | with_entries(select(.value != null))'
+}
+
+state_code() {
+	case $1 in
+	blocked) echo 3 ;;
+	error | exited) echo 4 ;;
+	*) echo 0 ;;
+	esac
+}
+
+settles() {
+	case $1 in idle | done | blocked | error) return 0 ;; *) return 1 ;; esac
+}
+
+# wait_for BLOCK UNTIL TIMEOUT [BASELINE]
+#
+# Print the record that ends the wait. UNTIL is "settled" or a state.
+# TIMEOUT is in seconds, 0 for none. With BASELINE (the updated_at seen
+# before a prompt was sent), only a record reported after it counts, and
+# no activity within $stall_after seconds is a stall.
+#
+# Returns 0 when matched, 4 when the pane closed, 5 on timeout, 6 on stall.
+wait_for() {
+	local block=$1 until=$2 timeout=$3 baseline=${4-} gated=0
+	local start=$SECONDS changed=0 active=0 rec state updated
+	[[ $# -ge 4 ]] && gated=1
+
+	while :; do
+		if ! rec=$(record "$block"); then
+			if ! block_exists "$block"; then
+				printf '{"state":"exited"}\n'
+				return 4
+			fi
+			rec='{}'
+		fi
+		state=$(jq -r '.state // ""' <<<"$rec")
+		updated=$(jq -r '.updated_at // ""' <<<"$rec")
+
+		if [[ $gated == 0 ]]; then
+			if [[ $until == settled ]] && settles "$state"; then
+				printf '%s\n' "$rec"
+				return 0
+			fi
+			if [[ $until == "$state" ]]; then
+				printf '%s\n' "$rec"
+				return 0
+			fi
+		else
+			[[ -n $updated && $updated != "$baseline" ]] && changed=1
+			# idle alone may be a stale or transient record; working,
+			# blocked, done, or error reported after the prompt are proof
+			# that the turn started.
+			if [[ $changed == 1 && $state != idle && -n $state ]]; then
+				active=1
+			fi
+			if [[ $active == 1 ]] && settles "$state"; then
+				printf '%s\n' "$rec"
+				return 0
+			fi
+			if [[ $active == 0 ]] && ((SECONDS - start >= stall_after)); then
+				if [[ $changed == 1 ]] && settles "$state"; then
+					printf '%s\n' "$rec"
+					return 0
+				fi
+				printf '%s\n' "$rec"
+				return 6
+			fi
+		fi
+
+		if [[ $timeout != 0 ]] && ((SECONDS - start >= timeout)); then
+			printf '%s\n' "$rec"
+			return 5
+		fi
+		sleep "$poll"
+	done
+}
+
+# Capture a pane as text, with trailing spaces removed and runs of blank
+# lines squeezed to one. TUIs like Codex pad the screen with blank rows, which
+# would otherwise push the content out of a short tail.
+capture() {
+	rex capture -s "$session" -b "$1" --trim --unwrap |
+		awk '{ sub(/[ \t]+$/, "") } /^$/ { blank = 1; next } { if (blank && seen) print ""; blank = 0; seen = 1; print }'
+}
+
+screen_tail() {
+	capture "$1" 2>/dev/null | tail -n "${2:-20}" >&2 || true
+}
+
+cmd_start() {
+	local name="" kind=claude tab=0 split="" ratio="" anchor=${REX_BLOCK:-}
+	local cwd=$PWD focus=false timeout=120
+	local -a agent_args=()
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--kind) kind=$2; shift 2 ;;
+		--tab) tab=1; shift ;;
+		--split) split=$2; shift 2 ;;
+		--ratio) ratio=$2; shift 2 ;;
+		--anchor) anchor=$2; shift 2 ;;
+		--cwd) cwd=$2; shift 2 ;;
+		--focus) focus=true; shift ;;
+		--timeout) timeout=$2; shift 2 ;;
+		-s | --session) session=$2; shift 2 ;;
+		--) shift; agent_args=("$@"); break ;;
+		-*) die 1 "start: unknown option $1" ;;
+		*) [[ -z $name ]] || die 1 "start: unexpected argument $1"; name=$1; shift ;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "start: NAME is required"
+	[[ $name =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || die 2 "start: invalid name '$name': use [a-z][a-z0-9_-]{0,31}"
+	need_session
+	command -v "$kind" >/dev/null || die 1 "start: '$kind' is not on PATH"
+
+	if rex block ls -s "$session" --json | jq -e --arg n "$name" 'any(.blocks[]; .label == $n)' >/dev/null; then
+		die 2 "start: a pane named '$name' already exists in this session"
+	fi
+
+	# $REX_BLOCK is only a valid anchor in its own session.
+	if [[ $anchor == "${REX_BLOCK:-}" && $session != "${REX_SESSION:-}" ]]; then anchor=""; fi
+
+	local -a run_args=(-s "$session" --label "$name" -c "$cwd" --focus="$focus" --json)
+	if [[ $tab == 0 && -n $anchor ]]; then
+		if [[ -z $split ]]; then
+			local size cols rows
+			size=$(rex block call -s "$session" -b "$anchor" size 2>/dev/null) || die 2 "start: cannot read anchor pane $anchor"
+			cols=$(jq -r '.columns' <<<"$size")
+			rows=$(jq -r '.rows' <<<"$size")
+			# A cell is about twice as tall as it is wide.
+			if ((cols >= rows * 2)); then split=right; else split=below; fi
+		fi
+		run_args+=(--split "$split" -b "$anchor")
+		[[ -n $ratio ]] && run_args+=(--ratio "$ratio")
+	fi
+
+	local created block window
+	created=$(rex run "${run_args[@]}" -- "$kind" ${agent_args[@]+"${agent_args[@]}"}) || die 1 "start: rex run failed"
+	block=$(jq -r '.block_ids[0]' <<<"$created")
+	window=$(jq -r '.window_id // empty' <<<"$created")
+	[[ -n $window ]] && rex window rename -s "$session" "$window" "$name" >/dev/null 2>&1 || true
+
+	local rec code=0
+	rec=$(wait_for "$block" settled "$timeout") || code=$?
+	local extra
+	extra=$(jq -nc --arg kind "$kind" --arg session "$session" '{program: $kind, session_id: $session}')
+	case $code in
+	0)
+		emit "$name" "$block" "$rec" "$extra"
+		code=$(state_code "$(jq -r '.state' <<<"$rec")")
+		if [[ $code == 3 ]]; then
+			printf '%s: agent_not_ready: %s is blocked during startup; read its screen before answering\n' "$prog" "$name" >&2
+		fi
+		exit "$code"
+		;;
+	4)
+		emit "$name" "$block" "$rec" "$extra"
+		die 4 "start: $name exited during startup"
+		;;
+	*)
+		emit "$name" "$block" "$rec" "$extra"
+		printf '%s: agent_not_ready: %s reported no idle status within %ss. Screen:\n' "$prog" "$name" "$timeout" >&2
+		screen_tail "$block"
+		exit 5
+		;;
+	esac
+}
+
+cmd_prompt() {
+	local name="" text="" have_text=0 wait=0 timeout=0 force=0
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--wait) wait=1; shift ;;
+		--timeout) timeout=$2; shift 2 ;;
+		--force) force=1; shift ;;
+		-s | --session) session=$2; shift 2 ;;
+		-) [[ -n $name ]] || die 1 "prompt: NAME comes before TEXT"; text=$(cat); have_text=1; shift ;;
+		--)
+			shift
+			if [[ $# -gt 0 ]]; then text=$1; have_text=1; shift; fi
+			;;
+		-*) die 1 "prompt: unknown option $1" ;;
+		*)
+			if [[ -z $name ]]; then name=$1
+			elif [[ $have_text == 0 ]]; then text=$1; have_text=1
+			else die 1 "prompt: unexpected argument $1"
+			fi
+			shift
+			;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "prompt: NAME is required"
+	[[ $have_text == 1 && -n $text ]] || die 1 "prompt: TEXT is required (use - for stdin)"
+	need_session
+
+	local block rec state baseline
+	block=$(resolve "$name")
+	rec=$(record "$block") || die 4 "prompt: cannot read $name"
+	state=$(jq -r '.state // ""' <<<"$rec")
+	if [[ $state == blocked ]]; then
+		emit "$name" "$block" "$rec"
+		die 3 "agent_blocked: $name is waiting on you; nothing was sent. Read it with: $prog read $name"
+	fi
+	if [[ $state == working && $force == 0 ]]; then
+		emit "$name" "$block" "$rec"
+		die 7 "agent_busy: $name is working; nothing was sent. Wait with '$prog wait $name' or pass --force"
+	fi
+	baseline=$(jq -r '.updated_at // ""' <<<"$rec")
+
+	jq -nc --arg b "$block" --arg t "$text" '{block_id: $b, event: {type: "paste", payload: {text: $t}}}' |
+		rex api call -s "$session" block.event - >/dev/null || die 1 "prompt: paste failed"
+	# Let the agent finish reading the paste before Enter, so Enter submits
+	# instead of landing inside the pasted text.
+	sleep 0.2
+	rex send-key -s "$session" -b "$block" enter >/dev/null || die 1 "prompt: sending Enter failed"
+
+	if [[ $wait == 0 ]]; then
+		emit "$name" "$block" "$rec" '{"submitted":true}'
+		exit 0
+	fi
+
+	local code=0 start=$SECONDS
+	rec=$(wait_for "$block" settled "$timeout" "$baseline") || code=$?
+	local extra
+	extra=$(jq -nc --argjson s "$((SECONDS - start))" '{submitted: true, elapsed_s: $s}')
+	emit "$name" "$block" "$rec" "$extra"
+	case $code in
+	0) exit "$(state_code "$(jq -r '.state' <<<"$rec")")" ;;
+	4) die 4 "prompt: $name exited" ;;
+	5) die 5 "timeout: $name is still $(jq -r '.state // "unknown"' <<<"$rec") after ${timeout}s; the prompt was delivered, so don't resend it" ;;
+	6) die 6 "agent_prompt_stalled: $name showed no activity within ${stall_after}s. Check '$prog read $name' before resending" ;;
+	esac
+}
+
+cmd_wait() {
+	local name="" until=settled timeout=0
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--until) until=$2; shift 2 ;;
+		--timeout) timeout=$2; shift 2 ;;
+		-s | --session) session=$2; shift 2 ;;
+		-*) die 1 "wait: unknown option $1" ;;
+		*) [[ -z $name ]] || die 1 "wait: unexpected argument $1"; name=$1; shift ;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "wait: NAME is required"
+	case $until in settled | idle | done | blocked | error | working) ;; *) die 1 "wait: unknown state '$until'" ;; esac
+	need_session
+
+	local block rec code=0
+	block=$(resolve "$name")
+	rec=$(wait_for "$block" "$until" "$timeout") || code=$?
+	emit "$name" "$block" "$rec"
+	case $code in
+	0)
+		if [[ $until == settled ]]; then exit "$(state_code "$(jq -r '.state' <<<"$rec")")"; fi
+		exit 0
+		;;
+	4) die 4 "wait: $name exited" ;;
+	*) die 5 "timeout: $name is still $(jq -r '.state // "unknown"' <<<"$rec") after ${timeout}s" ;;
+	esac
+}
+
+cmd_get() {
+	local name=""
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		-s | --session) session=$2; shift 2 ;;
+		*) name=$1; shift ;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "get: NAME is required"
+	need_session
+	local block rec title
+	block=$(resolve "$name")
+	rec=$(record "$block") || die 4 "get: cannot read $name"
+	title=$(rex block call -s "$session" -b "$block" title 2>/dev/null | jq -c '{title: .title}') || title='{}'
+	emit "$name" "$block" "$rec" "$title"
+}
+
+cmd_read() {
+	local name="" lines=120
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--lines) lines=$2; shift 2 ;;
+		-s | --session) session=$2; shift 2 ;;
+		-*) die 1 "read: unknown option $1" ;;
+		*) name=$1; shift ;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "read: NAME is required"
+	need_session
+	local block
+	block=$(resolve "$name")
+	if [[ $lines == 0 ]]; then
+		capture "$block"
+	else
+		capture "$block" | tail -n "$lines"
+	fi
+}
+
+cmd_keys() {
+	local name=""
+	local -a keys=()
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		-s | --session) session=$2; shift 2 ;;
+		*) if [[ -z $name ]]; then name=$1; else keys+=("$1"); fi; shift ;;
+		esac
+	done
+	[[ -n $name && ${#keys[@]} -gt 0 ]] || die 1 "keys: NAME and at least one KEY are required"
+	need_session
+	local block
+	block=$(resolve "$name")
+	rex send-key -s "$session" -b "$block" "${keys[@]}"
+}
+
+cmd_list() {
+	local json=0
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--json) json=1; shift ;;
+		-s | --session) session=$2; shift 2 ;;
+		*) die 1 "list: unexpected argument $1" ;;
+		esac
+	done
+	need_session
+	local blocks rows="[]" block label rec
+	blocks=$(rex block ls -s "$session" --json) || die 1 "cannot list panes in $session"
+	while IFS=$'\t' read -r block label; do
+		[[ -n $block ]] || continue
+		rec=$(record "$block") || continue
+		[[ $rec == '{}' ]] && continue
+		rows=$(jq -c --arg b "$block" --arg l "$label" --arg me "${REX_BLOCK:-}" --argjson r "$rec" \
+			'. + [{name: $l, block_id: $b, app: ($r.effective_app // $r.app), state: $r.state,
+			       kind: $r.kind, msg: $r.msg, self: ($b == $me)} | with_entries(select(.value != null))]' <<<"$rows")
+	done < <(jq -r '.blocks[] | select(.creator_name == "com.superlogical.terminal") | [.block_id, (.label // "")] | @tsv' <<<"$blocks")
+
+	if [[ $json == 1 ]]; then
+		printf '%s\n' "$rows"
+	else
+		jq -r '(["NAME", "ID", "APP", "STATE", "MESSAGE"] | @tsv),
+		       (.[] | [(.name + (if .self then " (you)" else "" end)), .block_id[-6:], (.app // "-"),
+		               (.state + (if .kind then ":" + .kind else "" end)), (.msg // "")] | @tsv)' <<<"$rows" |
+			column -t -s $'\t'
+	fi
+}
+
+cmd_close() {
+	local name=""
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		-s | --session) session=$2; shift 2 ;;
+		*) name=$1; shift ;;
+		esac
+	done
+	[[ -n $name ]] || die 1 "close: NAME is required"
+	need_session
+	local block
+	block=$(resolve "$name")
+	[[ $block != "${REX_BLOCK:-}" ]] || die 1 "close: refusing to close your own pane"
+	rex block close -s "$session" "$block" >/dev/null
+	jq -nc --arg n "$name" --arg b "$block" '{name: $n, block_id: $b, closed: true}'
+}
+
+main() {
+	command -v rex >/dev/null || die 1 "rex is not on PATH"
+	command -v jq >/dev/null || die 1 "jq is not on PATH"
+	session=${REX_SESSION:-}
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		-s | --session) session=$2; shift 2 ;;
+		-h | --help | help) usage; exit 0 ;;
+		*) break ;;
+		esac
+	done
+	[[ $# -gt 0 ]] || { usage >&2; exit 1; }
+
+	local cmd=$1
+	shift
+	case $cmd in
+	start) cmd_start "$@" ;;
+	prompt) cmd_prompt "$@" ;;
+	wait) cmd_wait "$@" ;;
+	get) cmd_get "$@" ;;
+	read) cmd_read "$@" ;;
+	keys) cmd_keys "$@" ;;
+	list | ls) cmd_list "$@" ;;
+	close) cmd_close "$@" ;;
+	*) die 1 "unknown command '$cmd' (see $prog --help)" ;;
+	esac
+}
+
+main "$@"

@@ -23,6 +23,8 @@
 
     ".agents".source = dotfilesPath + /agents;
 
+    ".config/rex".source = dotfilesPath + /rex;
+
     ".codex/AGENTS.md".source = dotfilesPath + /codex/AGENTS.md;
   };
 }

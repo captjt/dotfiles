@@ -1,7 +1,7 @@
 set shell := ["zsh", "-cu"]
 
 shell_files := "config/zshrc zsh/*.zsh fzf/*.zsh kubernetes/*.zsh gcloud/*.zsh docker/*.zsh nvm/*.zsh pyenv/*.zsh rust/*.zsh go/*.zsh homebrew/*.zsh az/*.zsh npm/*.zsh just/*.zsh zoxide/*.zsh direnv/*.zsh mise/*.zsh github/*.zsh"
-bash_files := "install.sh bin/agent-handoff bin/gauth bin/gcr-reports bin/k8s-new-user bin/k8s-resource-requests bin/install_kubectl bin/install_terraform bin/install_terragrunt bin/install_gcloud bin/install_go_osx"
+bash_files := "install.sh bin/agent-handoff bin/rex-agent bin/gauth bin/gcr-reports bin/k8s-new-user bin/k8s-resource-requests bin/install_kubectl bin/install_terraform bin/install_terragrunt bin/install_gcloud bin/install_go_osx"
 
 default:
   just --list
