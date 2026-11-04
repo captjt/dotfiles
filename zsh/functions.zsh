@@ -32,202 +32,65 @@ GKE_CLUSTER_REGION=${GKE_CLUSTER_REGION:-"us-east4"}
 GKE_ENVIRONMENTS=${GKE_ENVIRONMENTS:-"dev:project-dev:8881,staging:project-stage:8882,prod:project-prod:8883"}
 
 gke_connect() {
-  local env=$1
+  local env=$1 context_name cluster_name port
 
-  # Validate input
   if [[ -z "$env" ]]; then
     echo "Usage: gke_connect [environment]"
     _gke_show_available_environments
     return 1
   fi
 
-  # Check if configuration is set
-  if [[ -z "$GKE_ENVIRONMENTS" ]]; then
-    echo "❌ GKE_ENVIRONMENTS not configured. Please set your environment configuration."
-    echo "Example: export GKE_ENVIRONMENTS=\"dev:my-project-dev:8881,staging:my-project-stage:8882\""
+  if ! gke-tunnel ensure "$env"; then
+    echo "❌ Failed to establish the $env bastion tunnel"
     return 1
   fi
 
-  # Parse environments from configuration (bash/zsh compatible)
-  local found=false
-  local config_list="$GKE_ENVIRONMENTS"
+  context_name="gke-$env"
+  if ! kubectl config get-contexts -o name | grep -qx "$context_name"; then
+    echo "❌ Missing kubectl context: $context_name"
+    echo "Run gcloud container clusters get-credentials for this environment first."
+    return 1
+  fi
 
-  while [[ -n "$config_list" ]]; do
-    local config="${config_list%%,*}"                   # Get first item
-    config_list="${config_list#*,}"                     # Remove first item
-    [[ "$config" == "$config_list" ]] && config_list="" # Handle last item
+  port=$(gke-tunnel port "$env") || return 1
+  cluster_name=$(kubectl config view --context "$context_name" --minify \
+    -o jsonpath='{.contexts[0].context.cluster}') || return 1
 
-    IFS=':' read -r name project port <<<"$config"
+  kubectl config set-cluster "$cluster_name" \
+    --proxy-url="http://127.0.0.1:$port" >/dev/null || return 1
+  kubectl config use-context "$context_name" >/dev/null || return 1
 
-    if [[ "$env" == "$name" ]]; then
-      found=true
-      echo "🔗 Connecting to $name environment..."
-
-      # Check if proxy is already running for this port
-      if pgrep -f "L${port}:127.0.0.1:8888" >/dev/null; then
-        echo "📡 Proxy already running on port $port"
-      else
-        echo "🚀 Starting proxy for $name on port $port..."
-
-        # Start proxy in background
-        gcloud beta compute ssh "$GKE_BASTION_HOST" \
-          --tunnel-through-iap \
-          --project "$project" \
-          --zone "$GKE_BASTION_ZONE" \
-          -- -L${port}:127.0.0.1:8888 -N &
-
-        # Store PID for cleanup
-        echo $! >"/tmp/gke_proxy_${name}.pid"
-
-        # Wait for proxy to establish
-        echo "⏳ Waiting for proxy to establish..."
-        sleep 4
-
-        # Verify proxy is working
-        if ! pgrep -f "L${port}:127.0.0.1:8888" >/dev/null; then
-          echo "❌ Failed to start proxy"
-          return 1
-        fi
-      fi
-
-      # Check if kubectl context already exists
-      local context_name="gke_${project}_${GKE_CLUSTER_REGION}_${GKE_CLUSTER_NAME}"
-      if kubectl config get-contexts -o name | grep -q "^${context_name}$"; then
-        echo "📋 Using existing kubectl context: $context_name"
-        kubectl config use-context "$context_name"
-      else
-        echo "📋 Creating new kubectl context..."
-        # Get credentials WITHOUT proxy (gcloud doesn't need it for this)
-        gcloud container clusters get-credentials \
-          --project "$project" \
-          --region "$GKE_CLUSTER_REGION" \
-          --internal-ip \
-          "$GKE_CLUSTER_NAME"
-
-        # Rename context for easier identification
-        kubectl config rename-context "$context_name" "gke-$name" 2>/dev/null || true
-      fi
-
-      # Set proxy environment AFTER getting credentials
-      export HTTPS_PROXY="http://localhost:${port}"
-      echo "🌐 Set HTTPS_PROXY to http://localhost:${port}"
-
-      # Verify connection
-      echo "🔍 Testing connection..."
-      if kubectl cluster-info --request-timeout=10s >/dev/null 2>&1; then
-        echo "✅ Successfully connected to $name environment!"
-        echo "📊 Current context: $(kubectl config current-context)"
-        echo ""
-        echo "You can now use kubectl commands for the $name environment"
-        echo "To disconnect, run: gke_disconnect"
-      else
-        echo "❌ Failed to connect to cluster. Check your proxy and credentials."
-        return 1
-      fi
-
-      break
-    fi
-  done
-
-  if [[ "$found" == false ]]; then
-    echo "❌ Unknown environment: $env"
-    _gke_show_available_environments
+  echo "🔍 Testing $env cluster connection..."
+  if kubectl --context "$context_name" cluster-info --request-timeout=10s >/dev/null 2>&1; then
+    echo "✅ Connected to $env using context $context_name"
+    echo "🌐 Cluster proxy: http://127.0.0.1:$port"
+  else
+    echo "❌ Failed to connect to $env. Check gke-tunnel status $env."
     return 1
   fi
 }
 
 # Helper function to disconnect and cleanup
 gke_disconnect() {
-  echo "🧹 Cleaning up GKE connections..."
+  local env=${1:-all} entry name project port
+  gke-tunnel stop "$env" || return 1
 
-  # Parse environments to get all possible env names
-  if [[ -n "$GKE_ENVIRONMENTS" ]]; then
-    local config_list="$GKE_ENVIRONMENTS"
-
-    while [[ -n "$config_list" ]]; do
-      local config="${config_list%%,*}"                   # Get first item
-      config_list="${config_list#*,}"                     # Remove first item
-      [[ "$config" == "$config_list" ]] && config_list="" # Handle last item
-
-      IFS=':' read -r name project port <<<"$config"
-      local pid_file="/tmp/gke_proxy_${name}.pid"
-      if [[ -f "$pid_file" ]]; then
-        local pid=$(cat "$pid_file")
-        if kill "$pid" 2>/dev/null; then
-          echo "🔌 Stopped proxy for $name (PID: $pid)"
-        fi
-        rm "$pid_file"
-      fi
-    done
-  fi
-
-  # Also kill any remaining SSH tunnels (backup cleanup)
-  if [[ -n "$GKE_BASTION_HOST" ]]; then
-    pkill -f "gcloud.*compute.*ssh.*${GKE_BASTION_HOST}.*-L.*:127.0.0.1:8888" 2>/dev/null || true
-  fi
-
-  # Clear proxy environment
-  unset HTTPS_PROXY
-  echo "🌐 Cleared HTTPS_PROXY"
-
-  echo "✅ Disconnected from all GKE environments"
+  # Clean up proxy state left by the older implementation without touching an
+  # unrelated user-configured proxy.
+  for entry in ${(s:,:)GKE_ENVIRONMENTS}; do
+    IFS=: read -r name project port <<<"$entry"
+    if [[ "$HTTPS_PROXY" == "http://localhost:$port" ||
+          "$HTTPS_PROXY" == "http://127.0.0.1:$port" ]]; then
+      unset HTTPS_PROXY
+      break
+    fi
+  done
 }
 
 # Helper function to show current status
 gke_status() {
-  echo "📊 GKE Connection Status:"
-  echo "------------------------"
-
-  # Show configuration
-  echo "🔧 Configuration:"
-  echo "   Bastion Host: $GKE_BASTION_HOST"
-  echo "   Bastion Zone: $GKE_BASTION_ZONE"
-  echo "   Cluster Name: $GKE_CLUSTER_NAME"
-  echo "   Cluster Region: $GKE_CLUSTER_REGION"
-  echo ""
-
-  # Check proxy status
-  local has_proxy=false
-  if [[ -n "$GKE_ENVIRONMENTS" ]]; then
-    local config_list="$GKE_ENVIRONMENTS"
-
-    while [[ -n "$config_list" ]]; do
-      local config="${config_list%%,*}"                   # Get first item
-      config_list="${config_list#*,}"                     # Remove first item
-      [[ "$config" == "$config_list" ]] && config_list="" # Handle last item
-
-      IFS=':' read -r name project port <<<"$config"
-      if pgrep -f "L${port}:127.0.0.1:8888" >/dev/null; then
-        echo "📡 Proxy running for $name on port $port"
-        has_proxy=true
-      fi
-    done
-  fi
-
-  if [[ "$has_proxy" == false ]]; then
-    echo "📡 No active proxies"
-  fi
-
-  # Check HTTPS_PROXY
-  if [[ -n "$HTTPS_PROXY" ]]; then
-    echo "🌐 HTTPS_PROXY: $HTTPS_PROXY"
-  else
-    echo "🌐 HTTPS_PROXY: not set"
-  fi
-
-  # Check current kubectl context
-  local current_context=$(kubectl config current-context 2>/dev/null || echo "none")
-  echo "📋 Current kubectl context: $current_context"
-
-  # Test connectivity if proxy is active
-  if [[ -n "$HTTPS_PROXY" ]]; then
-    echo "🔍 Testing cluster connectivity..."
-    if kubectl cluster-info --request-timeout=5s >/dev/null 2>&1; then
-      echo "✅ Cluster connection: OK"
-    else
-      echo "❌ Cluster connection: Failed"
-    fi
-  fi
+  k8s-mcp-status
+  echo "Current kubectl context: $(kubectl config current-context 2>/dev/null || echo none)"
 }
 
 # Helper function to show available environments

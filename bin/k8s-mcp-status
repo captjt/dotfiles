@@ -1,0 +1,59 @@
+#!/bin/zsh
+
+set -o pipefail
+
+state_dir="$HOME/.local/state/k8s-mcp/clients"
+log_dir="$HOME/Library/Logs/k8s-mcp"
+
+printf '%-10s %-8s %-7s %-12s %-12s\n' ENVIRONMENT TUNNEL PORT MCP_CLIENTS CLUSTER
+
+for environment_name in dev staging; do
+  port=$(gke-tunnel port "$environment_name" 2>/dev/null || print '?')
+  if gke-tunnel status "$environment_name" true >/dev/null 2>&1; then
+    tunnel_status=up
+  else
+    tunnel_status=down
+  fi
+
+  client_count=0
+  client_pids=()
+  if [[ -d "$state_dir" ]]; then
+    for record in "$state_dir/$environment_name".*.tsv(N); do
+      IFS=$'\t' read -r _ wrapper_pid parent_pid started_at <"$record"
+      if [[ "$wrapper_pid" == <-> ]] && kill -0 "$wrapper_pid" 2>/dev/null; then
+        ((client_count += 1))
+        client_pids+=("$wrapper_pid")
+      else
+        rm -f "$record"
+      fi
+    done
+  fi
+
+  kubeconfig="$HOME/.kube/mcp-$environment_name.yaml"
+  cluster_status=unconfigured
+  if [[ -r "$kubeconfig" ]]; then
+    configured_proxy=$(kubectl config --kubeconfig "$kubeconfig" view --minify \
+      -o jsonpath='{.clusters[0].cluster.proxy-url}' 2>/dev/null)
+    expected_proxy="http://127.0.0.1:$port"
+    if [[ "$configured_proxy" != "$expected_proxy" ]]; then
+      cluster_status=bad-proxy
+    elif [[ "$tunnel_status" == up ]]; then
+      (
+        unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+        kubectl --kubeconfig "$kubeconfig" get --raw=/readyz \
+          --request-timeout=5s >/dev/null 2>&1
+      ) && cluster_status=reachable || cluster_status=unreachable
+    else
+      cluster_status=offline
+    fi
+  fi
+
+  printf '%-10s %-8s %-7s %-12s %-12s\n' \
+    "$environment_name" "$tunnel_status" "$port" "$client_count" "$cluster_status"
+
+  if ((client_count > 0)); then
+    print "  active wrapper PIDs: ${client_pids[*]}"
+  fi
+done
+
+print "Logs: $log_dir"

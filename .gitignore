@@ -30,6 +30,9 @@ Temporary Items
 *.last-run
 *.tsbuildinfo
 
+# LaunchAgent plists stay local:
+*.plist
+
 # Certificates:
 *.crt
 *.user-ca-bundle

@@ -1,0 +1,415 @@
+#!/bin/zsh
+
+set -o pipefail
+unsetopt BG_NICE
+
+# Defaults are overridden by ~/.localrc, matching the interactive shell setup.
+GKE_BASTION_HOST=${GKE_BASTION_HOST:-"cluster-bastion"}
+GKE_BASTION_ZONE=${GKE_BASTION_ZONE:-"us-east4-a"}
+GKE_CLUSTER_NAME=${GKE_CLUSTER_NAME:-"cluster"}
+GKE_CLUSTER_REGION=${GKE_CLUSTER_REGION:-"us-east4"}
+GKE_ENVIRONMENTS=${GKE_ENVIRONMENTS:-"dev:project-dev:8881,staging:project-stage:8882,prod:project-prod:8883"}
+
+had_compdef=$+functions[compdef]
+if (( ! had_compdef )); then
+  compdef() { :; }
+fi
+if [[ -r "$HOME/.localrc" ]]; then
+  source "$HOME/.localrc"
+fi
+if (( ! had_compdef )); then
+  unfunction compdef
+fi
+
+state_dir=${GKE_TUNNEL_STATE_DIR:-"$HOME/.local/state/gke-tunnels"}
+log_dir=${GKE_TUNNEL_LOG_DIR:-"$HOME/Library/Logs/gke-tunnels"}
+lock_orphan_grace_seconds=2
+lock_max_age_seconds=120
+lock_owned=false
+lock_token=""
+mkdir -p "$state_dir" "$log_dir"
+chmod 700 "$state_dir"
+
+usage() {
+  print -u2 "Usage: gke-tunnel {start|ensure|stop|status|port} ENV"
+  print -u2 "       gke-tunnel stop all"
+  return 2
+}
+
+resolve_environment() {
+  local requested=$1 entry name project port
+
+  for entry in ${(s:,:)GKE_ENVIRONMENTS}; do
+    IFS=: read -r name project port <<<"$entry"
+    if [[ "$name" == "$requested" ]]; then
+      environment_name=$name
+      environment_project=$project
+      environment_port=$port
+      return 0
+    fi
+  done
+
+  print -u2 "Unknown GKE environment: $requested"
+  return 1
+}
+
+pid_file_for() {
+  print -r -- "$state_dir/$1.pid"
+}
+
+log_file_for() {
+  print -r -- "$log_dir/$1.log"
+}
+
+launch_label_for() {
+  print -r -- "com.jordan.gke-tunnel.$1"
+}
+
+managed_job_is_loaded() {
+  local label
+  label=$(launch_label_for "$1")
+  launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1
+}
+
+tunnel_is_running() {
+  local name=$1 port=$2 pid_file pid
+  pid_file=$(pid_file_for "$name")
+
+  [[ -r "$pid_file" ]] || return 1
+  read -r pid <"$pid_file"
+  [[ "$pid" == <-> ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  lsof -nP -a -p "$pid" -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+acquire_lock() {
+  lock_dir="$state_dir/$1.lock"
+  local attempt
+
+  for attempt in {1..50}; do
+    if mkdir "$lock_dir" 2>/dev/null; then
+      lock_owned=true
+      lock_token="$$.$(date +%s).$RANDOM"
+      if ! print -r -- "$$ $lock_token" >|"$lock_dir/owner"; then
+        lock_owned=false
+        lock_token=""
+        rmdir "$lock_dir" 2>/dev/null || true
+        print -u2 "Unable to record ownership of the $1 tunnel lock"
+        return 1
+      fi
+      chmod 600 "$lock_dir/owner"
+      return 0
+    fi
+
+    reclaim_stale_lock "$1" "$lock_dir" && continue
+    sleep 0.1
+  done
+
+  print -u2 "Timed out waiting for the $1 tunnel lock"
+  return 1
+}
+
+lock_age_seconds() {
+  local lock_path=$1 modified now
+  modified=$(/usr/bin/stat -f %m "$lock_path" 2>/dev/null) || return 1
+  now=$(date +%s)
+  print -r -- $(( now - modified ))
+}
+
+lock_is_stale() {
+  local lock_path=$1 owner_file="$1/owner" owner_pid owner_token age
+  [[ -d "$lock_path" ]] || return 1
+  age=$(lock_age_seconds "$lock_path") || return 1
+
+  if [[ -r "$owner_file" ]]; then
+    read -r owner_pid owner_token <"$owner_file"
+    if [[ "$owner_pid" == <-> ]] && kill -0 "$owner_pid" 2>/dev/null; then
+      (( age >= lock_max_age_seconds ))
+      return
+    fi
+    return 0
+  fi
+
+  # Older versions created an empty directory. A short grace period avoids
+  # racing a new owner between mkdir(2) and writing its ownership record.
+  (( age >= lock_orphan_grace_seconds ))
+}
+
+reclaim_stale_lock() {
+  local name=$1 lock_path=$2 abandoned
+  lock_is_stale "$lock_path" || return 1
+
+  abandoned="$lock_path.stale.$$.$RANDOM"
+  mv "$lock_path" "$abandoned" 2>/dev/null || return 1
+  rm -f "$abandoned/owner"
+  if ! rmdir "$abandoned" 2>/dev/null; then
+    print -u2 "Warning: reclaimed the $name tunnel lock but could not remove $abandoned"
+  fi
+  print -u2 "Reclaimed stale $name tunnel lock"
+}
+
+release_lock() {
+  local owner_pid owner_token
+  if [[ "$lock_owned" == true && -n "${lock_dir:-}" && -r "$lock_dir/owner" ]]; then
+    read -r owner_pid owner_token <"$lock_dir/owner"
+    if [[ "$owner_pid" == "$$" && "$owner_token" == "$lock_token" ]]; then
+      rm -f "$lock_dir/owner"
+      rmdir "$lock_dir" 2>/dev/null || true
+    fi
+  fi
+  lock_owned=false
+  lock_token=""
+  lock_dir=""
+}
+
+start_tunnel() {
+  local requested=$1 pid_file log_file gcloud launcher_pid listener_pid attempt
+  resolve_environment "$requested" || return 1
+  pid_file=$(pid_file_for "$environment_name")
+  log_file=$(log_file_for "$environment_name")
+
+  if tunnel_is_running "$environment_name" "$environment_port"; then
+    reclaim_stale_lock "$environment_name" "$state_dir/$environment_name.lock" || true
+    print "Tunnel already running: $environment_name (127.0.0.1:$environment_port)"
+    return 0
+  fi
+
+  acquire_lock "$environment_name" || return 1
+  trap release_lock EXIT
+  trap 'release_lock; exit 129' HUP
+  trap 'release_lock; exit 130' INT
+  trap 'release_lock; exit 143' TERM
+
+  if tunnel_is_running "$environment_name" "$environment_port"; then
+    print "Tunnel already running: $environment_name (127.0.0.1:$environment_port)"
+    release_lock
+    trap - EXIT HUP INT TERM
+    return 0
+  fi
+
+  if managed_job_is_loaded "$environment_name"; then
+    local label
+    label=$(launch_label_for "$environment_name")
+    launchctl enable "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+    launchctl kickstart -k "gui/$(id -u)/$label" || {
+      release_lock
+      trap - EXIT HUP INT TERM
+      return 1
+    }
+
+    for attempt in {1..150}; do
+      if tunnel_is_running "$environment_name" "$environment_port"; then
+        print "Tunnel ready: $environment_name"
+        release_lock
+        trap - EXIT HUP INT TERM
+        return 0
+      fi
+      sleep 0.1
+    done
+
+    print -u2 "Timed out waiting for the managed $environment_name tunnel"
+    release_lock
+    trap - EXIT HUP INT TERM
+    return 1
+  fi
+
+  rm -f "$pid_file"
+  gcloud=$(command -v gcloud)
+  if [[ -z "$gcloud" ]]; then
+    print -u2 "gcloud is not installed or not on PATH"
+    release_lock
+    trap - EXIT HUP INT TERM
+    return 1
+  fi
+
+  print "Starting $environment_name tunnel on 127.0.0.1:$environment_port..."
+  nohup "$gcloud" beta compute ssh "$GKE_BASTION_HOST" \
+    --quiet \
+    --tunnel-through-iap \
+    --project "$environment_project" \
+    --zone "$GKE_BASTION_ZONE" \
+    -- \
+    -o BatchMode=yes \
+    -o ConnectTimeout=15 \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o StrictHostKeyChecking=accept-new \
+    -L"${environment_port}:127.0.0.1:8888" \
+    -N </dev/null >>"$log_file" 2>&1 &
+  launcher_pid=$!
+
+  for attempt in {1..150}; do
+    if nc -z 127.0.0.1 "$environment_port" >/dev/null 2>&1; then
+      listener_pid=$(lsof -nP -t -iTCP:"$environment_port" -sTCP:LISTEN 2>/dev/null | head -n 1)
+      if [[ "$listener_pid" == <-> ]]; then
+        print -r -- "$listener_pid" >|"$pid_file"
+        chmod 600 "$pid_file"
+        print "Tunnel ready: $environment_name (PID $listener_pid)"
+        release_lock
+        trap - EXIT HUP INT TERM
+        return 0
+      fi
+    fi
+
+    if ! kill -0 "$launcher_pid" 2>/dev/null; then
+      print -u2 "Tunnel process exited before becoming ready. See $log_file"
+      release_lock
+      trap - EXIT HUP INT TERM
+      return 1
+    fi
+    sleep 0.1
+  done
+
+  kill "$launcher_pid" 2>/dev/null || true
+  print -u2 "Timed out starting the $environment_name tunnel. See $log_file"
+  release_lock
+  trap - EXIT HUP INT TERM
+  return 1
+}
+
+supervise_tunnel() {
+  local requested=$1 pid_file log_file gcloud launcher_pid listener_pid attempt result
+  resolve_environment "$requested" || return 1
+  pid_file=$(pid_file_for "$environment_name")
+  log_file=$(log_file_for "$environment_name")
+  rm -f "$pid_file"
+
+  gcloud=$(command -v gcloud)
+  if [[ -z "$gcloud" ]]; then
+    print -u2 "gcloud is not installed or not on PATH"
+    return 1
+  fi
+
+  cleanup_supervisor() {
+    local recorded_pid
+    if [[ -r "$pid_file" ]]; then
+      read -r recorded_pid <"$pid_file"
+      if [[ "$recorded_pid" == <-> ]] &&
+         lsof -nP -a -p "$recorded_pid" -iTCP:"$environment_port" -sTCP:LISTEN >/dev/null 2>&1; then
+        kill "$recorded_pid" 2>/dev/null || true
+      fi
+    fi
+    [[ -n "${launcher_pid:-}" ]] && kill "$launcher_pid" 2>/dev/null || true
+    rm -f "$pid_file"
+  }
+  trap cleanup_supervisor EXIT HUP INT TERM
+
+  "$gcloud" beta compute ssh "$GKE_BASTION_HOST" \
+    --quiet \
+    --tunnel-through-iap \
+    --project "$environment_project" \
+    --zone "$GKE_BASTION_ZONE" \
+    -- \
+    -o BatchMode=yes \
+    -o ConnectTimeout=15 \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o StrictHostKeyChecking=accept-new \
+    -L"${environment_port}:127.0.0.1:8888" \
+    -N </dev/null >>"$log_file" 2>&1 &
+  launcher_pid=$!
+
+  for attempt in {1..150}; do
+    if nc -z 127.0.0.1 "$environment_port" >/dev/null 2>&1; then
+      listener_pid=$(lsof -nP -t -iTCP:"$environment_port" -sTCP:LISTEN 2>/dev/null | head -n 1)
+      if [[ "$listener_pid" == <-> ]]; then
+        print -r -- "$listener_pid" >|"$pid_file"
+        chmod 600 "$pid_file"
+        break
+      fi
+    fi
+    kill -0 "$launcher_pid" 2>/dev/null || return 1
+    sleep 0.1
+  done
+
+  [[ -r "$pid_file" ]] || return 1
+  wait "$launcher_pid"
+  result=$?
+  return "$result"
+}
+
+stop_tunnel() {
+  local requested=$1 pid_file pid attempt label
+  resolve_environment "$requested" || return 1
+  pid_file=$(pid_file_for "$environment_name")
+
+  if managed_job_is_loaded "$environment_name"; then
+    label=$(launch_label_for "$environment_name")
+    launchctl disable "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+    launchctl kill SIGTERM "gui/$(id -u)/$label" >/dev/null 2>&1 || true
+  fi
+
+  if ! tunnel_is_running "$environment_name" "$environment_port"; then
+    rm -f "$pid_file"
+    print "Tunnel not running: $environment_name"
+    return 0
+  fi
+
+  read -r pid <"$pid_file"
+  kill "$pid" 2>/dev/null || true
+  for attempt in {1..50}; do
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 0.1
+  done
+
+  if kill -0 "$pid" 2>/dev/null; then
+    print -u2 "Tunnel did not stop cleanly: $environment_name (PID $pid)"
+    return 1
+  fi
+
+  rm -f "$pid_file"
+  print "Tunnel stopped: $environment_name"
+}
+
+status_tunnel() {
+  local requested=$1 quiet=${2:-false}
+  resolve_environment "$requested" || return 1
+
+  if tunnel_is_running "$environment_name" "$environment_port"; then
+    [[ "$quiet" == true ]] || print "up\t$environment_name\t$environment_port"
+    return 0
+  fi
+
+  [[ "$quiet" == true ]] || print "down\t$environment_name\t$environment_port"
+  return 1
+}
+
+command_name=${1:-}
+requested_environment=${2:-}
+
+case "$command_name" in
+  start|ensure)
+    [[ -n "$requested_environment" ]] || { usage; exit 2; }
+    start_tunnel "$requested_environment"
+    ;;
+  stop)
+    [[ -n "$requested_environment" ]] || { usage; exit 2; }
+    if [[ "$requested_environment" == all ]]; then
+      result=0
+      for entry in ${(s:,:)GKE_ENVIRONMENTS}; do
+        IFS=: read -r name _ _ <<<"$entry"
+        stop_tunnel "$name" || result=1
+      done
+      exit "$result"
+    fi
+    stop_tunnel "$requested_environment"
+    ;;
+  status)
+    [[ -n "$requested_environment" ]] || { usage; exit 2; }
+    status_tunnel "$requested_environment" "${3:-false}"
+    ;;
+  port)
+    [[ -n "$requested_environment" ]] || { usage; exit 2; }
+    resolve_environment "$requested_environment" || exit 1
+    print -r -- "$environment_port"
+    ;;
+  supervise)
+    [[ -n "$requested_environment" ]] || { usage; exit 2; }
+    supervise_tunnel "$requested_environment"
+    ;;
+  *)
+    usage
+    ;;
+esac

@@ -1,0 +1,33 @@
+# Shared policy for local Kubernetes MCP servers. Cluster selection and the
+# bastion proxy are supplied by the per-environment launcher and kubeconfig.
+read_only = true
+toolsets = ["core", "helm"]
+list_output = "table"
+log_level = 2
+
+# Defense in depth: keep credential and authorization objects unavailable even
+# if the Kubernetes identity is accidentally granted broader read permissions.
+[[denied_resources]]
+group = ""
+version = "v1"
+kind = "Secret"
+
+[[denied_resources]]
+group = "rbac.authorization.k8s.io"
+version = "v1"
+kind = "Role"
+
+[[denied_resources]]
+group = "rbac.authorization.k8s.io"
+version = "v1"
+kind = "RoleBinding"
+
+[[denied_resources]]
+group = "rbac.authorization.k8s.io"
+version = "v1"
+kind = "ClusterRole"
+
+[[denied_resources]]
+group = "rbac.authorization.k8s.io"
+version = "v1"
+kind = "ClusterRoleBinding"
