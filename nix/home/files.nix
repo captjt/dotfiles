@@ -14,6 +14,8 @@
 
     "docker.yaml".source = dotfilesPath + /config/docker.yaml;
 
+    ".nvm/default-packages".source = dotfilesPath + /nvm/default-packages;
+
     ".config/opencode/opencode.json".source = dotfilesPath + /opencode/opencode.jsonc;
     ".opencode/package.json".source = dotfilesPath + /opencode/package.json;
     ".opencode/plugin".source = dotfilesPath + /opencode/plugin;

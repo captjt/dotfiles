@@ -17,6 +17,9 @@
 
     ~/docker.yaml: config/docker.yaml
 
+    # Global npm packages installed with every new nvm Node version:
+    ~/.nvm/default-packages: nvm/default-packages
+
     # OpenCode settings:
     ~/.config/opencode/opencode.json: opencode/opencode.jsonc
     ~/.opencode/plugin: opencode/plugin
