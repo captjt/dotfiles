@@ -16,5 +16,6 @@ local function load_local(path)
   end
 end
 
--- pr-review: the PR review orchestrator's actions, such as pr_review_status.
-load_local(HOME .. "/.config/rex/pr-review/actions.lua")
+-- rex-reviewer (github.com/captjt/rex-reviewer): agent PR reviews, with its
+-- reviewer_* actions. Its config is ~/.config/rex-reviewer/config.lua.
+load_local(HOME .. "/git/captjt/rex-reviewer/init.lua")

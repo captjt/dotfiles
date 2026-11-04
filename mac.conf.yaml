@@ -1,2 +1,14 @@
+# The GKE tunnel LaunchAgents are gitignored, machine-local plists, so each
+# link is made only where its plist exists.
+- link:
+    ~/Library/LaunchAgents/com.jordan.gke-tunnel.dev.plist:
+      path: gcloud/com.jordan.gke-tunnel.dev.plist
+      create: true
+      if: test -f gcloud/com.jordan.gke-tunnel.dev.plist
+    ~/Library/LaunchAgents/com.jordan.gke-tunnel.staging.plist:
+      path: gcloud/com.jordan.gke-tunnel.staging.plist
+      create: true
+      if: test -f gcloud/com.jordan.gke-tunnel.staging.plist
+
 - brewfile:
     - Brewfile
