@@ -19,3 +19,7 @@ end
 -- rex-reviewer (github.com/captjt/rex-reviewer): agent PR reviews, with its
 -- reviewer_* actions. Its config is ~/.config/rex-reviewer/config.lua.
 load_local(HOME .. "/git/captjt/rex-reviewer/init.lua")
+
+-- rex-inbox (github.com/captjt/rex-inbox): its inbox_rpc action, which agents
+-- on other Rex hosts use to reach the hub on this machine.
+load_local(HOME .. "/git/captjt/rex-inbox/rex/init.lua")

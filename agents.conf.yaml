@@ -8,3 +8,8 @@
     ~/.codex/AGENTS.md:
       path: codex/AGENTS.md
       create: true
+
+    # Claude Code's global instructions:
+    ~/.claude/CLAUDE.md:
+      path: claude/CLAUDE.md
+      create: true
